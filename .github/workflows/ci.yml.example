@@ -43,16 +43,21 @@ jobs:
       contents: read
       pull-requests: read
     outputs:
-      web: ${{ steps.filter.outputs.web }}
-      api: ${{ steps.filter.outputs.api }}
-      mobile: ${{ steps.filter.outputs.mobile }}
-      infra: ${{ steps.filter.outputs.infra }}
+      customer-web: ${{ steps.filter.outputs['customer-web'] }}
+      customer-mobile-app: ${{ steps.filter.outputs['customer-mobile-app'] }}
+      driver-web: ${{ steps.filter.outputs['driver-web'] }}
+      driver-mobile-app: ${{ steps.filter.outputs['driver-mobile-app'] }}
+      admin-web: ${{ steps.filter.outputs['admin-web'] }}
+      admin-app: ${{ steps.filter.outputs['admin-app'] }}
+      api: ${{ steps.filter.outputs['api'] }}
+      worker: ${{ steps.filter.outputs['worker'] }}
     steps:
       - uses: actions/checkout@v7
       - id: filter
         uses: dorny/paths-filter@v4
         with:
           # Root files that affect every app: lockfiles, workspace and tool config.
+          # Adjust to the workspace tool chosen in ADR-001 (e.g. add Cargo.toml and Cargo.lock).
           filters: |
             shared: &shared
               - 'packages/**'
@@ -62,17 +67,30 @@ jobs:
               - 'package-lock.json'
               - 'turbo.json'
               - '.github/workflows/ci.yml'
-            web:
+            customer-web:
               - *shared
-              - 'apps/web/**'
+              - 'apps/customer-web/**'
+            customer-mobile-app:
+              - *shared
+              - 'apps/customer-mobile-app/**'
+            driver-web:
+              - *shared
+              - 'apps/driver-web/**'
+            driver-mobile-app:
+              - *shared
+              - 'apps/driver-mobile-app/**'
+            admin-web:
+              - *shared
+              - 'apps/admin-web/**'
+            admin-app:
+              - *shared
+              - 'apps/admin-app/**'
             api:
               - *shared
               - 'apps/api/**'
-            mobile:
+            worker:
               - *shared
-              - 'apps/mobile/**'
-            infra:
-              - 'infra/**'
+              - 'apps/worker/**'
 
   repo:
     runs-on: ubuntu-latest
@@ -85,31 +103,93 @@ jobs:
       - name: Check features (FEATURES.md references, PRD links, generated parts)
         run: node scripts/check-features.mjs
 
-  web:
+  customer-web:
     needs: changes
-    if: needs.changes.outputs.web == 'true' || github.event_name == 'workflow_dispatch'
+    if: needs.changes.outputs['customer-web'] == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
-      # Node.js example — adjust or replace:
-      # - uses: actions/setup-node@v7
-      #   with:
-      #     node-version-file: .nvmrc
-      #     cache: pnpm
-      # - run: pnpm install --frozen-lockfile
-      # - run: pnpm --filter web lint
-      # - run: pnpm --filter web typecheck
-      # - run: pnpm --filter web test
-      # - run: pnpm --filter web build
+      # Install, lint, typecheck, unit tests and build for customer-web, using the commands in
+      # its README Commands block.
       - name: Fail until configured
         run: |
-          echo "Replace with the web app's install, lint, test and build commands."
+          echo "Replace with customer-web's install, lint, typecheck, test and build commands."
+          exit 1
+
+  customer-mobile-app:
+    needs: changes
+    if: needs.changes.outputs['customer-mobile-app'] == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest   # Keep on Linux; signed iOS/macOS builds run in release.yml
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      # Lint, typecheck and unit tests only, on Linux. Signed Android and iOS builds run in
+      # release.yml.
+      - name: Fail until configured
+        run: |
+          echo "Replace with customer-mobile-app's install, lint and test commands."
+          exit 1
+
+  driver-web:
+    needs: changes
+    if: needs.changes.outputs['driver-web'] == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      # Install, lint, typecheck, unit tests and build for driver-web, using the commands in
+      # its README Commands block.
+      - name: Fail until configured
+        run: |
+          echo "Replace with driver-web's install, lint, typecheck, test and build commands."
+          exit 1
+
+  driver-mobile-app:
+    needs: changes
+    if: needs.changes.outputs['driver-mobile-app'] == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest   # Keep on Linux; signed iOS/macOS builds run in release.yml
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      # Lint, typecheck and unit tests only, on Linux. Signed Android and iOS builds run in
+      # release.yml.
+      - name: Fail until configured
+        run: |
+          echo "Replace with driver-mobile-app's install, lint and test commands."
+          exit 1
+
+  admin-web:
+    needs: changes
+    if: needs.changes.outputs['admin-web'] == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      # Install, lint, typecheck, unit tests and build for admin-web, using the commands in
+      # its README Commands block.
+      - name: Fail until configured
+        run: |
+          echo "Replace with admin-web's install, lint, typecheck, test and build commands."
+          exit 1
+
+  admin-app:
+    needs: changes
+    if: needs.changes.outputs['admin-app'] == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest   # Keep on Linux; signed iOS/macOS builds run in release.yml
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      # Lint, typecheck and unit tests only, on Linux. Signed Android, iOS and desktop builds run in
+      # release.yml.
+      - name: Fail until configured
+        run: |
+          echo "Replace with admin-app's install, lint and test commands."
           exit 1
 
   api:
     needs: changes
-    if: needs.changes.outputs.api == 'true' || github.event_name == 'workflow_dispatch'
+    if: needs.changes.outputs['api'] == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     # A database for integration tests, with trust authentication so no password sits
@@ -123,50 +203,39 @@ jobs:
     #     options: --health-cmd pg_isready --health-interval 5s --health-retries 10
     steps:
       - uses: actions/checkout@v7
-      # Python example — adjust or replace:
-      # - uses: actions/setup-python@v7
-      #   with:
-      #     python-version-file: apps/api/.python-version
-      #     cache: pip
-      # - run: pip install -r apps/api/requirements.txt
-      # - run: ruff check apps/api
-      # - run: pytest apps/api
+      # Install, lint, typecheck, unit and integration tests and build for api, using the
+      # commands in its README Commands block.
       - name: Fail until configured
         run: |
-          echo "Replace with the API's install, lint, test and build commands."
+          echo "Replace with api's install, lint, test and build commands."
           exit 1
 
-  mobile:
+  worker:
     needs: changes
-    if: needs.changes.outputs.mobile == 'true' || github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest   # Keep on Linux; signed iOS/macOS builds run in release.yml
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v7
-      # Lint, typecheck and unit tests only. Desktop apps follow the same pattern.
-      - name: Fail until configured
-        run: |
-          echo "Replace with the mobile app's install, lint and test commands."
-          exit 1
-
-  infra:
-    needs: changes
-    if: needs.changes.outputs.infra == 'true'
+    if: needs.changes.outputs['worker'] == 'true' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    # A database for integration tests, with trust authentication so no password sits
+    # in the repository (it only listens inside the runner):
+    # services:
+    #   postgres:
+    #     image: postgres:17
+    #     env:
+    #       POSTGRES_HOST_AUTH_METHOD: trust
+    #     ports: ['127.0.0.1:5432:5432']
+    #     options: --health-cmd pg_isready --health-interval 5s --health-retries 10
     steps:
       - uses: actions/checkout@v7
-      # Format check, validate and lint the infrastructure code. A plan needs
-      # read-only cloud credentials: use short-lived OIDC credentials limited to
-      # reading state, never long-lived keys, and never run apply here.
+      # Install, lint, typecheck, unit and integration tests and build for worker, using the
+      # commands in its README Commands block.
       - name: Fail until configured
         run: |
-          echo "Replace with the infrastructure validate and plan commands."
+          echo "Replace with worker's install, lint, test and build commands."
           exit 1
 
   ci-ok:
     if: always()
-    needs: [changes, repo, web, api, mobile, infra]
+    needs: [changes, repo, customer-web, customer-mobile-app, driver-web, driver-mobile-app, admin-web, admin-app, api, worker]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

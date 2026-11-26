@@ -1,6 +1,6 @@
 # Technical Specification
 
-Status: Draft | Owner: {{owner}} | Version: 0.1 | Last updated: {{YYYY-MM-DD}}
+Status: Draft | Owner: @bankole2000 | Version: 0.2 | Last updated: 2026-11-26
 References: FEATURES.md, PRD.md, DESIGN.md
 
 ## Architecture overview
@@ -11,11 +11,15 @@ One row per deployable app in `apps/`, per shared package in `packages/`, and fo
 
 | Component | Path | Kind | Stack and version | Deploys to | Owner | Requirements |
 |---|---|---|---|---|---|---|
-| {{web}} | apps/{{web}} | {{Web client}} | {{e.g. framework, language and version}} | {{hosting}} | {{owner}} | {{FR IDs}} |
-| {{api}} | apps/{{api}} | {{Server/API}} | {{stack}} | {{hosting}} | {{owner}} | {{FR IDs}} |
-| {{mobile}} | apps/{{mobile}} | {{Mobile client}} | {{stack; minimum OS versions}} | {{App Store / Google Play}} | {{owner}} | {{FR IDs}} |
-| {{api-contract}} | packages/{{api-contract}} | Shared package | {{types / OpenAPI / schema tooling}} | Not deployed | {{owner}} | — |
-| infra | infra/ | Infrastructure | {{IaC tool, see ADR-002}} | {{cloud accounts / environments}} | {{owner}} | — |
+| customer-web | apps/customer-web | Web client | {{framework, language and version}} | {{hosting}} | @bankole2000 | FR-001–FR-009, FR-011–FR-014, FR-025, FR-030, FR-031, FR-035 |
+| customer-mobile-app | apps/customer-mobile-app | Mobile client | {{stack; minimum OS versions}} | App Store / Google Play | @bankole2000 | FR-001–FR-009, FR-011–FR-014, FR-025, FR-030, FR-031, FR-035 |
+| driver-web | apps/driver-web | Web client | {{framework, language and version}} | {{hosting}} | @bankole2000 | FR-011, FR-012, FR-015, FR-018, FR-025 |
+| driver-mobile-app | apps/driver-mobile-app | Mobile client | {{stack; minimum OS versions}} | App Store / Google Play | @bankole2000 | FR-004, FR-007, FR-010, FR-011, FR-012, FR-015–FR-018, FR-025, FR-031–FR-033, FR-035 |
+| admin-web | apps/admin-web | Web client | {{framework, language and version}} | {{hosting}} | @bankole2000 | FR-018–FR-029, FR-031 |
+| admin-app | apps/admin-app | Mobile client, desktop client | {{stack; minimum OS versions}} | App Store / Google Play; {{desktop distribution}} | @bankole2000 | FR-018–FR-029, FR-031 |
+| api | apps/api | Server/API | {{stack}} | {{hosting}} | @bankole2000 | FR-001–FR-035 |
+| worker | apps/worker | Worker | {{stack}} | {{hosting}} | @bankole2000 | FR-004, FR-006, FR-012, FR-014, FR-018, FR-034 |
+| api-contract | packages/api-contract | Shared package | {{types / OpenAPI / schema tooling}} | Not deployed | @bankole2000 | — |
 
 ## Local development
 Defaults that avoid the usual clashes on a developer machine; change them only with a reason.
@@ -55,9 +59,11 @@ Every server app has a contract package. List every consumer, including other se
 
 | Provider | Contract | Consumers | Consumer auth | Compatibility rule |
 |---|---|---|---|---|
-| {{api}} | packages/{{api-contract}} | {{e.g. web, admin, android, ios, desktop}} | {{user sessions/tokens}} | {{Installed-client window (below)}} |
-| {{ops-api}} | packages/{{ops-api-contract}} | {{e.g. ops}} | {{staff sessions/tokens}} | {{Deploy-together or rolling window}} |
-| {{api}} | packages/{{api-contract}} | {{e.g. ops-api (server-to-server)}} | {{service credentials, never a user's token}} | {{Rolling-deploy window}} |
+| api | packages/api-contract | customer-web, customer-mobile-app | Customer sessions (phone and one-time code) | Installed-client window (below) |
+| api | packages/api-contract | driver-web, driver-mobile-app | Driver sessions (phone and one-time code) | Installed-client window (below) |
+| api | packages/api-contract | admin-web, admin-app | Staff sessions (email, password and second factor), checked per role | Installed-client window (below), for admin-app |
+
+The worker has no api of its own: it reads and writes the same data store as the api and takes jobs from a queue, so it deploys together with the api and follows the rolling-deploy rule below for shared data and job formats.
 
 ### API compatibility
 - Clients and servers use generated or shared types from the contract package; they don't hand-write request shapes.

@@ -1,6 +1,6 @@
 # Development Roadmap
 
-Status: Draft | Owner: {{owner}} | Version: 0.1 | Last updated: {{YYYY-MM-DD}}
+Status: Draft | Owner: @bankole2000 | Version: 0.2 | Last updated: 2026-11-26
 References: FEATURES.md, PRD.md, DESIGN.md, TECHNICAL.md, TESTING.md
 
 ## Milestones
@@ -13,10 +13,12 @@ Managing milestones: a milestone is the set of journeys in its Journeys column. 
 | Milestone | Outcome | Journeys | Exit criteria |
 |---|---|---|---|
 | M0 - Foundation | Runnable skeleton of every app | — | The M0 checklist below is done; TC-000 passes on a fresh clone |
-| M1 - {{First slice, e.g. Customers can publish}} | {{What a user can do when it is done}} | {{J-01, J-02}} | {{Features of these journeys pass their acceptance tests on their surfaces}} |
-| M2 - {{Next slice}} | {{What a user can do when it is done}} | {{J-03}} | {{Features of these journeys pass their acceptance tests on their surfaces}} |
-| M3 - Hardening and launch | Reliable, deployed product | — | Acceptance and security checks pass; release checklist approved |
-| M4 - Post-launch (stretch) | Improvements | {{Deferred journeys}} | Defined per release |
+| M1 - Drivers can apply and be approved | Staff accounts, prices and service areas are set up; drivers apply with their documents and vehicle, and operations approves or declines them | J-04, J-07, J-10 | Features of these journeys pass their acceptance tests on their surfaces |
+| M2 - Customers can ride now | Customers sign up, book a ride now, track the driver, pay and rate; drivers complete trips and are paid | J-01, J-02, J-05, J-11 | Features of these journeys pass their acceptance tests on their surfaces |
+| M3 - Book ahead, operations and support | Customers book rides in advance within a state and between states; operations watches rides live and answers support tickets | J-03, J-06, J-08, J-09 | Features of these journeys pass their acceptance tests on their surfaces |
+| M4 - Hardening and launch | Reliable, deployed product | — | Acceptance and security checks pass; release checklist approved |
+| M5 - Safety features | Customers and drivers share trips, raise SOS alerts that operations handles, and trips start only with the customer's PIN | J-12 | Features of these journeys pass their acceptance tests on their surfaces |
+| M6 - Post-launch (stretch) | Automated driver verification and trip monitoring; dispatch and delivery | J-13, J-14 | Defined per release |
 
 ### M0 checklist
 Every project with a client and a server needs these in M0; drop the ones that don't apply.
