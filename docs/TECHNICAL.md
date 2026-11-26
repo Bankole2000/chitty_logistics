@@ -1,6 +1,6 @@
 # Technical Specification
 
-Status: Draft | Owner: @bankole2000 | Version: 0.3 | Last updated: 2026-11-26
+Status: Draft | Owner: @bankole2000 | Version: 0.4 | Last updated: 2026-11-26
 References: FEATURES.md, PRD.md, DESIGN.md
 
 ## Architecture overview
@@ -17,19 +17,19 @@ One row per deployable app in `apps/`, per shared package in `packages/`, and fo
 | driver-mobile-app | apps/driver-mobile-app | Mobile client | {{stack; minimum OS versions}} | App Store / Google Play | @bankole2000 | FR-004, FR-007, FR-010, FR-011, FR-012, FR-015–FR-018, FR-025, FR-031–FR-033, FR-035 |
 | admin-web | apps/admin-web | Web client | {{framework, language and version}} | {{hosting}} | @bankole2000 | FR-018–FR-029, FR-031 |
 | admin-app | apps/admin-app | Mobile client, desktop client | {{stack; minimum OS versions}} | App Store / Google Play; {{desktop distribution}} | @bankole2000 | FR-018–FR-029, FR-031 |
-| api | apps/api | Server/API | {{stack}} | {{hosting}} | @bankole2000 | FR-001–FR-035 |
-| worker | apps/worker | Worker | {{stack}} | {{hosting}} | @bankole2000 | FR-004, FR-006, FR-012, FR-014, FR-018, FR-034 |
-| api-contract | packages/api-contract | Shared package | {{types / OpenAPI / schema tooling}} | Not deployed | @bankole2000 | — |
+| api | apps/api | Server/API | Rust (stable, pinned in rust-toolchain.toml), axum on tokio, sqlx with migrations, Postgres 17 with PostGIS 3 (ADR-001) | {{hosting}} | @bankole2000 | FR-001–FR-035 |
+| worker | apps/worker | Worker | Rust, same Cargo workspace and database layer as api (ADR-001) | {{hosting}} | @bankole2000 | FR-004, FR-006, FR-012, FR-014, FR-018, FR-034 |
+| api-contract | packages/api-contract | Shared package | OpenAPI 3.1 spec generated from the api with utoipa, committed as openapi.json; typed clients generated from it when the first client is built | Not deployed | @bankole2000 | — |
 
 ## Local development
 Defaults that avoid the usual clashes on a developer machine; change them only with a reason.
-- **Ports:** uncommon ones, so the apps don't collide with other local tools (3000, 5173, 8000 and 8080 are often taken): {{e.g. api 18080, web 13000}}. Record each app's port in its `.env.example`.
+- **Ports:** uncommon ones, so the apps don't collide with other local tools (3000, 5173, 8000 and 8080 are often taken): api 18080, Postgres 15432; client ports are chosen when each client is created. Record each app's port in its `.env.example`.
 - **Host:** use `127.0.0.1`, not `localhost`, in URLs and bind addresses. `localhost` can resolve to IPv6 first, which adds a delay to every database connection on some systems and makes some dev servers listen on IPv6 only.
 - **Databases and other services** run in `docker-compose.yml` (committed) with trust authentication on `127.0.0.1` for local use and CI only, so no password sits in the repository. Each developer's extra services (caches, queues, other databases) go in a gitignored `docker-compose.override.yml`, which Compose loads automatically; commented-out services there cost nothing until needed. Turn off automatic restarts for local containers.
 - **CORS:** each server reads the allowed client origins from configuration (e.g. `API_CORS_ORIGINS`), with defaults for every local client: the web dev server and the desktop and mobile shells.
 
 ## Repository and workspace
-- Monorepo tooling: see ADR-001. {{e.g. pnpm workspaces + Turborepo; uv workspace; Gradle multi-project}}
+- Monorepo tooling: see ADR-001. A Cargo workspace at the repository root holds the Rust apps (api, later worker); the JavaScript and mobile workspace tooling is decided when the first client is created.
 - Dependency rules: apps may depend on packages; packages never depend on apps; apps never import from another app's folder.
 - {{Naming, code style, generated-code locations}}
 
@@ -101,9 +101,9 @@ The worker has no api of its own: it reads and writes the same data store as the
 ## Technical decisions
 | ID | Decision | Rationale | Status |
 |---|---|---|---|
-| ADR-001 | Monorepo tooling: {{workspace tool and task runner}} | {{Alternatives and tradeoffs; mobile toolchain compatibility}} | Proposed |
+| ADR-001 | Server stack and workspace: Rust in a Cargo workspace (apps/api, apps/worker); axum on tokio; sqlx (compile-checked SQL, migrations) on Postgres 17 with PostGIS; OpenAPI generated with utoipa into packages/api-contract | SeaORM: less SQL but weaker PostGIS support. Separate services per client: rejected, one api serves every client by role. Client workspace tooling decided with the first client | Accepted (@bankole2000, 2026-11-26) |
 | ADR-002 | Infrastructure-as-code tool: {{tool, or "none: managed hosting configured by hand"}} | {{Alternatives and tradeoffs; state storage}} | Proposed |
-| ADR-003 | {{Decision}} | {{Alternatives and tradeoffs}} | Proposed |
+| ADR-003 | Sessions: opaque random tokens; only their hash is stored in Postgres, with expiry and last use. Authorization checks permissions; roles are data that map to permissions, so changing what a role may do needs no code change | JWT access and refresh tokens: no lookup per request, but sign-out, archiving staff (FT-064) and revoking assistants only take effect when the token expires | Accepted (@bankole2000, 2026-11-26) |
 
 ## Open decisions and approval
 {{Human approver, revision, unresolved risks}}
