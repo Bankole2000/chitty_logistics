@@ -54,6 +54,18 @@ Start from the resources (R-) in FEATURES.md: each stored resource becomes an en
 
 {{External integrations, timeouts, retries, idempotency, events/workflows where needed}}
 
+### Error responses
+Every error response from a server has the same JSON body, with `Content-Type: application/json`:
+
+```json
+{"error": {"code": "not_found", "message": "The requested resource was not found.", "request_id": "…", "details": null}}
+```
+
+- `code`: stable snake_case identifier clients branch on (e.g. `not_found`, `forbidden`, `unauthenticated`, `invalid_request`, `rate_limited`, `internal`). New codes may be added; existing ones never change meaning.
+- `message`: human-readable, safe to show; never contains internal details (those are logged).
+- `request_id`: the request's `x-request-id` (sent by the client or generated), also returned as a response header and present on every log line for the request.
+- `details`: an object with code-specific data (e.g. which fields are invalid), or null.
+
 ### API contracts
 Every server app has a contract package. List every consumer, including other servers.
 

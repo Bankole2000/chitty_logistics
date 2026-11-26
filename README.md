@@ -67,12 +67,13 @@ Documents drafted or changed by an agent are reviewed by a human with `tools/doc
 This section is the single source of truth for project commands. Other documents and agents refer here. Use "All apps" to check everything before a PR; use an app's block when working inside that app. There is one block per app, package with its own checks, and `infra`; add or delete blocks to match. Write N/A where a command doesn't apply. Keep the blocks separate (blank lines between them), so changes to different apps don't conflict.
 
 ### All apps (repo root)
-- Install: {{command}}
-- Test: {{command}}
-- E2E: {{command or N/A}}
-- Lint: {{command}}
-- Typecheck: {{command or N/A}}
-- Build: {{command}}
+Only the Rust apps exist so far; client commands are added with the first client.
+- Install: `cargo fetch` (Rust toolchain pinned in rust-toolchain.toml; Docker for the database)
+- Test: `docker compose up -d --wait` then `cargo test --workspace`
+- E2E: N/A
+- Lint: `cargo fmt --all --check` and `cargo clippy --workspace --all-targets -- -D warnings`
+- Typecheck: `cargo check --workspace --all-targets`
+- Build: `cargo build --workspace --release`
 
 ### customer-web
 - Run locally: {{command}}
@@ -123,12 +124,12 @@ This section is the single source of truth for project commands. Other documents
 - Build: {{command}}
 
 ### api
-- Run locally: {{command}}
-- Test: {{command}}
-- Lint: {{command}}
-- Typecheck: {{command or N/A}}
-- Build: {{command}}
-- Migrations: {{command or N/A}}
+- Run locally: `docker compose up -d --wait` then `cargo run -p api` (listens on http://127.0.0.1:18081; configuration in apps/api/.env.example)
+- Test: `cargo test -p api` (needs the docker-compose database)
+- Lint: `cargo fmt -p api --check` and `cargo clippy -p api --all-targets -- -D warnings`
+- Typecheck: `cargo check -p api --all-targets`
+- Build: `cargo build -p api --release`
+- Migrations: `cargo run -p api -- migrate` (also run on start unless `API_MIGRATE_ON_START=false`); add one as `apps/api/migrations/<YYYYMMDDHHMMSS>_<name>.sql`
 
 ### worker
 - Run locally: {{command}}
