@@ -1,6 +1,6 @@
 # Product Requirements Document
 
-Status: Draft | Owner: @bankole2000 | Version: 0.2 | Last updated: 2026-11-26
+Status: Draft | Owner: @bankole2000 | Version: 0.3 | Last updated: 2026-11-26
 References: FEATURES.md (users U-, resources R-, surfaces S-, journeys J-, features FT-)
 
 FEATURES.md feeds this document. When features are approved or changed there, the requirements below are updated to match, and each requirement lists the features it covers.
@@ -31,6 +31,8 @@ The MVP ships 8 apps:
 | Staff | One website (`admin-web`) and one desktop and mobile app (`admin-app`) shared by operations and admin staff, with screens by role |
 | Servers | The api (`api`) all apps use, and a background worker (`worker`) for timed and scheduled work |
 
+After launch, an MCP server (`apps/mcp`, surface S-13) lets AI assistants act for a connected customer, and answer read-only questions for staff (FR-036 to FR-038). It is added to the project setup when it is built.
+
 Separate operations apps were dropped on 2026-11-26 to reduce the number of apps to build and maintain. Chitty offers no public api for third parties in the MVP.
 
 ## Objectives and success criteria
@@ -57,7 +59,7 @@ Values marked *configurable* are settings with a default (environment variable o
 | FR-010 | FT-038 | Drivers rate the customer after a completed ride. | The rating is saved and the customer's average updates. | Should |
 | FR-011 | FT-018, FT-041 | Customers and drivers see their past rides. | Each past ride shows route, other party, fare, payment status and rating. | Must |
 | FR-012 | FT-019, FT-021, FT-023, FT-042, FT-043 | Customers schedule rides within a state at least the minimum lead time ahead (configurable); drivers see and accept open scheduled rides; the system confirms a driver or hands the ride to operations by the lead time (configurable). | A scheduled ride shows as "Scheduled", is accepted by a driver, and has a confirmed driver before pickup or reaches operations in time. | Must |
-| FR-013 | FT-020 | Customers schedule inter-state rides on the routes Chitty offers. | A booking on an offered route shows as "Scheduled" with the route price. How inter-state trips work is an open decision (below). | Must |
+| FR-013 | FT-020 | Customers schedule private inter-state rides on the routes Chitty offers, with pickup within a time window (configurable). | A booking on an offered route, with a pickup time window, shows as "Scheduled" with the route price. | Must |
 | FR-014 | FT-024 | Customer and driver are reminded before a scheduled pickup (configurable). | Both receive a reminder with time, place, driver and vehicle. | Should |
 | FR-015 | FT-025, FT-026, FT-027, FT-028, FT-029, FT-030 | Drivers apply with a verified phone number, upload their documents, add their vehicle and payout bank account, sign in and follow their application status. | A new driver can submit an application with every required document and a vehicle, see each item's review status and save a bank account. | Must |
 | FR-016 | FT-031, FT-032 | Approved drivers go online and offline; the positions of online drivers are recorded at an interval (configurable). | Only approved drivers can go online; an online driver's position is available for matching and tracking. | Must |
@@ -80,10 +82,13 @@ Values marked *configurable* are settings with a default (environment variable o
 | FR-033 | FT-082, FT-083 | Driver identity is checked automatically: NIN and licence against a government verification service, and a selfie against the profile photo before going online at an interval (configurable). | Mismatched documents are flagged before review; a failed selfie check keeps the driver offline. | Could |
 | FR-034 | FT-084 | The system raises an alert when a ride leaves its expected route or stops for longer than a set time (configurable). | Operations receives an alert without anyone pressing SOS. | Could |
 | FR-035 | FT-085, FT-086, FT-087, FT-088 | Customers send packages: create a delivery order, a driver accepts, delivers with proof, and the customer tracks it. | A delivery is completed with proof of delivery and tracked by the customer. Stretch goal, not in the MVP. | Won't |
+| FR-036 | FT-089, FT-095, FT-096, FT-097 | Customers connect an AI assistant through the MCP server with the permissions they choose, and can revoke it; every assistant action is recorded, and requests outside the permissions, from a revoked connection or above a rate limit (configurable) are refused. | A connected assistant can do only what was granted, loses access at once when revoked, and each of its actions has an audit entry naming the connection. | Could |
+| FR-037 | FT-090, FT-091, FT-092, FT-093, FT-094 | A connected assistant gets fare estimates, shows the customer's rides, and books, schedules or cancels rides only after the customer confirms in the Chitty app. | Without the customer's confirmation in the app nothing is booked or cancelled; a confirmed request behaves exactly as if made in the app, with any cancellation fee shown before confirming. | Could |
+| FR-038 | FT-098, FT-099, FT-100, FT-101, FT-102 | Staff connect a read-only assistant that searches rides, summarises open tickets and answers report questions within their role; staff revoke their own connections and admins any staff connection. | The assistant returns only what the staff member's role may see and cannot change anything; a revoked connection loses access at once. | Could |
 
 ## Out of scope / stretch
 - Dispatch and delivery (FR-035): a stretch goal after the ride service.
-- Ride sharing between customers, a wallet, promotions, referrals, tips, saved places and booking for someone else: not drafted (see FEATURES.md, Gaps).
+- Ride sharing between customers within a state, promotions, referrals, tips, saved places and booking for someone else: not drafted (see FEATURES.md, Gaps). Shared seats on inter-state departures and a wallet are proposed in FEATURES.md (J-17 to J-19).
 - A public api for third parties.
 
 ## Business rules and glossary
@@ -94,6 +99,8 @@ Resources (R-) in FEATURES.md are the main glossary terms; define them here once
 - BR-003: A ride's price is fixed by the fare rules in force when it is booked; later fare rule changes apply only to new bookings.
 - BR-004: A card or transfer payment counts as paid only after a verified callback from the payment provider; repeated callbacks for the same payment change nothing.
 - BR-005: Every staff change to a driver, customer, ride, payment, fare rule, payout or staff account is recorded in the audit log with a reason.
+- BR-006: Inter-state trips are scheduled only, with pickup within a time window (configurable); they cannot be booked for now.
+- BR-007: Assistants connected through the MCP server act only within the permissions the person granted; bookings and cancellations need the person's confirmation in the Chitty app, and assistants never pay, refund or approve payouts.
 - Immediate ride: a ride requested for pickup now, within one state.
 - Scheduled ride: a ride booked for a later date and time, at least the minimum lead time ahead.
 - Inter-state ride: a scheduled ride between states on a route Chitty offers.
@@ -107,10 +114,10 @@ Resources (R-) in FEATURES.md are the main glossary terms; define them here once
 {{Budget, time, dependencies, domain/legal requirements}}
 
 ## Open decisions
-- How inter-state trips work: a private car or seats in a shared vehicle, drivers' return trips, and whether they can be booked for now as well. Owner: @bankole2000. Needed before M3 is planned (J-03, J-06).
+- Drivers' return trips on inter-state rides: whether and how Chitty reimburses them, and whether drivers may set their own seat price on shared departures (drafted as fixed by the route's fare rule). Owner: management. Needed before M3 is planned (J-03, J-06).
 - Cash and commission: how Chitty collects its commission on cash trips when a driver's cash exceeds what Chitty owes them. Owner: management. Needed before M2 is planned (J-11).
 - Staff roles: what HR does in the product (not employee records) and whether drivers count as staff. Owner: management. Needed before M1 is planned (J-10).
-- Payment methods and timing for the MVP, and the payment provider (vendor choice). Owner: @bankole2000. Needed before M2 is planned (J-02).
+- Payment providers: Paystack and OPay are chosen; still open is which provider handles which method (card, transfer, wallet top-ups) and which sends driver payouts. Owner: @bankole2000. Needed before M2 is planned (J-02, J-11).
 - Data protection under the Nigeria Data Protection Act 2023: retention periods and consent for personal data, location history and NIN (`review:privacy`). Owner: {{owner}}. Needed by {{date}}.
 
 ## Approval

@@ -1,6 +1,6 @@
 # Technical Specification
 
-Status: Draft | Owner: @bankole2000 | Version: 0.2 | Last updated: 2026-11-26
+Status: Draft | Owner: @bankole2000 | Version: 0.3 | Last updated: 2026-11-26
 References: FEATURES.md, PRD.md, DESIGN.md
 
 ## Architecture overview
@@ -62,6 +62,7 @@ Every server app has a contract package. List every consumer, including other se
 | api | packages/api-contract | customer-web, customer-mobile-app | Customer sessions (phone and one-time code) | Installed-client window (below) |
 | api | packages/api-contract | driver-web, driver-mobile-app | Driver sessions (phone and one-time code) | Installed-client window (below) |
 | api | packages/api-contract | admin-web, admin-app | Staff sessions (email, password and second factor), checked per role | Installed-client window (below), for admin-app |
+| api | packages/api-contract | mcp (server-to-server; planned for M6, added to the project setup when built) | Service credentials, acting for the person who granted the assistant connection; never that person's own session token | Rolling-deploy window |
 
 The worker has no api of its own: it reads and writes the same data store as the api and takes jobs from a queue, so it deploys together with the api and follows the rolling-deploy rule below for shared data and job formats.
 
@@ -82,7 +83,8 @@ The worker has no api of its own: it reads and writes the same data store as the
 ## Third-party services and costs
 | Service | Used by | Purpose | Plan / tier | Expected monthly cost | Limits and lock-in notes |
 |---|---|---|---|---|---|
-| {{Service}} | {{component}} | {{Purpose}} | {{Free / paid tier}} | {{Estimate}} | {{Quotas, exit path}} |
+| Paystack | api, worker | Card and bank transfer payments, wallet top-ups, refunds; possibly driver payouts | {{Free / paid tier}} | {{Estimate}} | Which provider handles which method and payouts is an open decision (PRD) |
+| OPay | api, worker | Card and bank transfer payments, wallet top-ups; possibly driver payouts | {{Free / paid tier}} | {{Estimate}} | As for Paystack; keep both behind one payment interface so either can be switched off |
 
 ## Error handling
 {{How errors are classified, surfaced to users (messages, codes) and to developers; retry and fallback rules; offline behavior for mobile and desktop; what must never be shown to users}}

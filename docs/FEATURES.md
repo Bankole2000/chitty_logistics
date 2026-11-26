@@ -1,6 +1,6 @@
 # Features
 
-Status: Draft | Owner: @bankole2000 | Version: 0.4 | Last updated: 2026-11-26
+Status: Draft | Owner: @bankole2000 | Version: 0.5 | Last updated: 2026-11-26
 References: PRD.md (requirements FR-), ROADMAP.md (milestones)
 
 ## How this file works
@@ -65,6 +65,7 @@ Common verbs are listed; add the ones this product needs (e.g. `requests`, `acce
 | A-28 | shares | Gives someone outside the product a view of a record (a link). | yes |
 | A-29 | verifies | Confirms a claim is true (a phone number by code, an identity, a trip PIN). | yes |
 | A-30 | refunds | Returns all or part of a payment to the payer. | yes |
+| A-31 | tops up | Adds money to a balance. | yes |
 
 ## Resources
 Kinds: `stored` (kept in the database) or `derived` (calculated from stored data, e.g. a report or a total).
@@ -92,6 +93,9 @@ Kinds: `stored` (kept in the database) or `derived` (calculated from stored data
 | R-19 | SOS alert | stored | R-05 | An emergency alert raised during a ride: who raised it, live location, status and resolution notes. |
 | R-20 | Delivery order | stored | R-01 | A dispatch or delivery job: pickup, drop-off, package details, recipient and proof of delivery. |
 | R-21 | Assistant connection | stored | — | Permission a customer or staff member gives an AI assistant: who granted it, what it may do (e.g. view rides, book, cancel; read-only for staff), when it was created and last used, and whether it has been revoked. |
+| R-22 | Shared departure | stored | R-02 | A driver's offer of seats between states: route, departure date and time window, vehicle, seats offered and left, price per seat and status. |
+| R-23 | Seat booking | stored | R-22 | A customer's booking of one or more seats on a shared departure: seats, pickup point, status and payment (R-08). |
+| R-24 | Wallet | stored | R-01 | A customer's Chitty balance: top-ups, ride payments and refunds, with the current balance. |
 
 ## Surfaces
 Where a feature is offered: one row per app in `apps/` (from the project setup), plus SDKs or other packages people use directly.
@@ -119,20 +123,23 @@ A journey is what one user does to reach a goal, as features in order. The Miles
 |---|---|---|---|---|---|
 | J-01 | Get started as a customer | U-01 | Have a verified account and be signed in | FT-001, FT-002, FT-003, FT-004, FT-005, FT-006 | M2 |
 | J-02 | Ride now | U-01 | Get a car to the destination right away and pay for it | FT-007, FT-008, FT-009, FT-010, FT-011, FT-012, FT-013, FT-014, FT-015, FT-016, FT-017, FT-018 | M2 |
-| J-03 | Book a ride in advance | U-01 | Have a driver confirmed for a future trip, within a state or between states | FT-019, FT-020, FT-021, FT-022, FT-023, FT-024 | M3 |
+| J-03 | Book a ride in advance | U-01 | Have a driver confirmed for a future trip, within a state or between states | FT-019, FT-020, FT-021, FT-022, FT-023, FT-024, FT-114 | M3 |
 | J-04 | Become a driver | U-02 | Apply with documents and a vehicle, ready for approval | FT-025, FT-026, FT-027, FT-028, FT-029, FT-030 | M1 |
 | J-05 | Drive and complete trips | U-02 | Take ride offers, complete trips and see earnings | FT-031, FT-032, FT-033, FT-034, FT-035, FT-036, FT-037, FT-038, FT-039, FT-040, FT-041 | M2 |
 | J-06 | Take scheduled and inter-state trips | U-02 | Commit to rides booked in advance | FT-042, FT-043 | M3 |
 | J-07 | Approve drivers and vehicles | U-03 | Only checked drivers and vehicles can take rides | FT-044, FT-045, FT-046, FT-047, FT-048, FT-049, FT-050 | M1 |
 | J-08 | Watch live operations | U-03 | See every active ride and vehicle and step in when needed | FT-051, FT-052, FT-053, FT-054, FT-055 | M3 |
 | J-09 | Support customers and drivers | U-03 | Resolve issues raised about rides and accounts | FT-056, FT-057, FT-058, FT-059, FT-060, FT-061 | M3 |
-| J-10 | Run the business | U-04 | Staff, prices and service areas are set up and the business can be monitored | FT-062, FT-063, FT-064, FT-065, FT-066, FT-067, FT-068, FT-069 | M1 |
+| J-10 | Run the business | U-04 | Staff, prices and service areas are set up and the business can be monitored | FT-062, FT-063, FT-064, FT-065, FT-066, FT-067, FT-068, FT-069, FT-113 | M1 |
 | J-11 | Pay drivers | U-04 | Drivers are paid their earnings on time and correctly | FT-070, FT-071, FT-072, FT-073, FT-074 | M2 |
 | J-12 | Ride safely | U-01 | Customers and drivers can get help and share their trip during a ride | FT-075, FT-076, FT-077, FT-078, FT-079, FT-080, FT-081 | M5 |
 | J-13 | Verify drivers and watch trips automatically | U-05 | Identity and trip risks are caught without waiting for a report | FT-082, FT-083, FT-084 | M6 |
 | J-14 | Send a package | U-01 | Have a package picked up and delivered (dispatch and delivery, stretch) | FT-085, FT-086, FT-087, FT-088 | M6 |
-| J-15 | Ride through an AI assistant | U-01 | Check prices and book, follow and cancel rides by asking an AI assistant | FT-089, FT-090, FT-091, FT-092, FT-093, FT-094, FT-095, FT-096, FT-097 | — |
-| J-16 | Ask operations questions through an AI assistant | U-03 | Look up rides, tickets and reports by asking an AI assistant, without it changing anything | FT-098, FT-099, FT-100, FT-101, FT-102 | — |
+| J-15 | Ride through an AI assistant | U-01 | Check prices and book, follow and cancel rides by asking an AI assistant | FT-089, FT-090, FT-091, FT-092, FT-093, FT-094, FT-095, FT-096, FT-097 | M6 |
+| J-16 | Ask operations questions through an AI assistant | U-03 | Look up rides, tickets and reports by asking an AI assistant, without it changing anything | FT-098, FT-099, FT-100, FT-101, FT-102 | M6 |
+| J-17 | Book a seat between states | U-01 | Travel between states on a seat in a driver's shared departure | FT-104, FT-105, FT-111, FT-112, FT-106 | — |
+| J-18 | Offer seats on an inter-state departure | U-02 | Fill a scheduled inter-state trip with passengers and complete it | FT-103, FT-107, FT-108, FT-109, FT-110 | — |
+| J-19 | Pay with a Chitty wallet | U-01 | Keep a balance and pay for rides from it | FT-115, FT-116, FT-117 | — |
 
 ## Features
 | ID | User | Action | Resource | Scope | Surfaces | Outcome | Priority | Depends on | Journey | Requirements | Status |
@@ -225,43 +232,58 @@ A journey is what one user does to reach a goal, as features in order. The Miles
 | FT-086 | U-02 Driver | A-15 accepts | R-20 Delivery order | A delivery offered to them | S-04 | The driver sees the pickup and package details | Won't | FT-085 | J-14 | FR-035 | approved |
 | FT-087 | U-02 Driver | A-18 completes | R-20 Delivery order | Own delivery, with proof of delivery (photo or recipient code) | S-04 | The customer and recipient see the package as delivered | Won't | FT-086 | J-14 | FR-035 | approved |
 | FT-088 | U-01 Customer | A-23 tracks | R-09 Driver location | The driver carrying own delivery | S-01, S-02 | The customer sees the package on its way on a map | Won't | FT-086 | J-14 | FR-035 | approved |
-| FT-089 | U-01 Customer | A-01 creates | R-21 Assistant connection | Own; the customer chooses what the assistant may do (view rides, get prices, book, cancel) | S-01, S-02 | The assistant is connected with only the chosen permissions, and the connection shows in the customer's settings | Could | FT-003 | J-15 | — (new) | proposed |
-| FT-090 | U-08 AI assistant | A-02 views | R-06 Fare estimate | For the connected customer, for a pickup, drop-off and vehicle class | S-13 | The assistant gets the same estimate the customer would see in the app | Could | FT-089, FT-008 | J-15 | — (new) | proposed |
-| FT-091 | U-08 AI assistant | A-12 requests | R-05 Ride | Immediate ride for the connected customer; sent only after the customer confirms the pickup, drop-off and price in the Chitty app | S-13 | The ride is requested after the customer confirms; without confirmation nothing is booked | Could | FT-090, FT-009 | J-15 | — (new) | proposed |
-| FT-092 | U-08 AI assistant | A-13 schedules | R-05 Ride | Scheduled ride for the connected customer, with the same confirmation in the Chitty app | S-13 | The ride shows as "Scheduled" after the customer confirms | Could | FT-090, FT-019 | J-15 | — (new) | proposed |
-| FT-093 | U-08 AI assistant | A-02 views | R-05 Ride | The connected customer's active and upcoming rides, with driver and vehicle details and status | S-13 | The assistant can tell the customer who is coming, in which car, and when | Could | FT-089, FT-011 | J-15 | — (new) | proposed |
-| FT-094 | U-08 AI assistant | A-14 cancels | R-05 Ride | The connected customer's ride, after the customer confirms in the Chitty app with any cancellation fee shown | S-13 | The ride is cancelled only after confirmation, and the customer saw the fee first | Could | FT-093, FT-013 | J-15 | — (new) | proposed |
-| FT-095 | U-01 Customer | A-05 removes | R-21 Assistant connection | Own connection | S-01, S-02 | The assistant loses access at once | Could | FT-089 | J-15 | — (new) | proposed |
-| FT-096 | U-05 System | A-11 records | R-16 Audit entry | Every action an assistant takes, tagged with its connection | S-11, S-13 | Each assistant action can be traced to the connection and the person who granted it | Could | FT-089 | J-15 | — (new) | proposed |
-| FT-097 | U-05 System | A-10 rejects | R-21 Assistant connection | Assistant requests outside the granted permissions, from a revoked connection, or above a configurable rate limit | S-11, S-13 | The assistant gets a clear error and nothing changes | Could | FT-089 | J-15 | — (new) | proposed |
-| FT-098 | U-03 Operations agent | A-01 creates | R-21 Assistant connection | Own; read-only, limited to what the staff member's role may see | S-08, S-09 | The assistant is connected read-only, and the connection shows in the staff member's settings | Could | FT-044 | J-16 | — (new) | proposed |
-| FT-099 | U-08 AI assistant | A-06 searches | R-05 Ride | For the connected staff member, within their role (e.g. scheduled rides tomorrow with no driver) | S-13 | The assistant returns the same rides the staff member would find in the admin apps | Could | FT-098, FT-052 | J-16 | — (new) | proposed |
-| FT-100 | U-08 AI assistant | A-02 views | R-11 Support ticket | Open tickets, for the connected staff member, within their role | S-13 | The assistant can summarise the ticket queue without replying or changing status | Could | FT-098, FT-058 | J-16 | — (new) | proposed |
-| FT-101 | U-08 AI assistant | A-02 views | R-17 Business report | For connected staff whose role may see reports | S-13 | The assistant answers questions about rides, revenue and drivers with the report figures | Could | FT-098, FT-066 | J-16 | — (new) | proposed |
-| FT-102 | U-03 Operations agent | A-05 removes | R-21 Assistant connection | Own connection; admins can also revoke any staff connection | S-08, S-09 | The assistant loses access at once | Could | FT-098 | J-16 | — (new) | proposed |
+| FT-089 | U-01 Customer | A-01 creates | R-21 Assistant connection | Own; the customer chooses what the assistant may do (view rides, get prices, book, cancel) | S-01, S-02 | The assistant is connected with only the chosen permissions, and the connection shows in the customer's settings | Could | FT-003 | J-15 | FR-036 | approved |
+| FT-090 | U-08 AI assistant | A-02 views | R-06 Fare estimate | For the connected customer, for a pickup, drop-off and vehicle class | S-13 | The assistant gets the same estimate the customer would see in the app | Could | FT-089, FT-008 | J-15 | FR-037 | approved |
+| FT-091 | U-08 AI assistant | A-12 requests | R-05 Ride | Immediate ride for the connected customer; sent only after the customer confirms the pickup, drop-off and price in the Chitty app | S-13 | The ride is requested after the customer confirms; without confirmation nothing is booked | Could | FT-090, FT-009 | J-15 | FR-037 | approved |
+| FT-092 | U-08 AI assistant | A-13 schedules | R-05 Ride | Scheduled ride for the connected customer, with the same confirmation in the Chitty app | S-13 | The ride shows as "Scheduled" after the customer confirms | Could | FT-090, FT-019 | J-15 | FR-037 | approved |
+| FT-093 | U-08 AI assistant | A-02 views | R-05 Ride | The connected customer's active and upcoming rides, with driver and vehicle details and status | S-13 | The assistant can tell the customer who is coming, in which car, and when | Could | FT-089, FT-011 | J-15 | FR-037 | approved |
+| FT-094 | U-08 AI assistant | A-14 cancels | R-05 Ride | The connected customer's ride, after the customer confirms in the Chitty app with any cancellation fee shown | S-13 | The ride is cancelled only after confirmation, and the customer saw the fee first | Could | FT-093, FT-013 | J-15 | FR-037 | approved |
+| FT-095 | U-01 Customer | A-05 removes | R-21 Assistant connection | Own connection | S-01, S-02 | The assistant loses access at once | Could | FT-089 | J-15 | FR-036 | approved |
+| FT-096 | U-05 System | A-11 records | R-16 Audit entry | Every action an assistant takes, tagged with its connection | S-11, S-13 | Each assistant action can be traced to the connection and the person who granted it | Could | FT-089 | J-15 | FR-036 | approved |
+| FT-097 | U-05 System | A-10 rejects | R-21 Assistant connection | Assistant requests outside the granted permissions, from a revoked connection, or above a configurable rate limit | S-11, S-13 | The assistant gets a clear error and nothing changes | Could | FT-089 | J-15 | FR-036 | approved |
+| FT-098 | U-03 Operations agent | A-01 creates | R-21 Assistant connection | Own; read-only, limited to what the staff member's role may see | S-08, S-09 | The assistant is connected read-only, and the connection shows in the staff member's settings | Could | FT-044 | J-16 | FR-038 | approved |
+| FT-099 | U-08 AI assistant | A-06 searches | R-05 Ride | For the connected staff member, within their role (e.g. scheduled rides tomorrow with no driver) | S-13 | The assistant returns the same rides the staff member would find in the admin apps | Could | FT-098, FT-052 | J-16 | FR-038 | approved |
+| FT-100 | U-08 AI assistant | A-02 views | R-11 Support ticket | Open tickets, for the connected staff member, within their role | S-13 | The assistant can summarise the ticket queue without replying or changing status | Could | FT-098, FT-058 | J-16 | FR-038 | approved |
+| FT-101 | U-08 AI assistant | A-02 views | R-17 Business report | For connected staff whose role may see reports | S-13 | The assistant answers questions about rides, revenue and drivers with the report figures | Could | FT-098, FT-066 | J-16 | FR-038 | approved |
+| FT-102 | U-03 Operations agent | A-05 removes | R-21 Assistant connection | Own connection; admins can also revoke any staff connection | S-08, S-09 | The assistant loses access at once | Could | FT-098 | J-16 | FR-038 | approved |
+| FT-103 | U-02 Driver | A-01 creates | R-22 Shared departure | Own, on an offered inter-state route: departure date and time window, vehicle, seats offered; price per seat from the route's fare rule | S-03, S-04 | The departure is open for booking and shows the seats left | Must | FT-046, FT-068 | J-18 | — (new) | proposed |
+| FT-104 | U-01 Customer | A-02 views | R-22 Shared departure | Open departures on a route and date: time window, seats left, price per seat, driver and vehicle | S-01, S-02 | The customer sees which departures still have seats | Must | FT-103 | J-17 | — (new) | proposed |
+| FT-105 | U-01 Customer | A-01 creates | R-23 Seat booking | One or more seats on an open departure, with a pickup point | S-01, S-02 | The seats are reserved, the seats left go down, and the booking shows as "Booked" | Must | FT-003, FT-104 | J-17 | — (new) | proposed |
+| FT-106 | U-01 Customer | A-14 cancels | R-23 Seat booking | Own booking; free before the configurable cut-off, fee after | S-01, S-02 | The seats are released and the customer sees whether a fee applied | Must | FT-105 | J-17 | — (new) | proposed |
+| FT-107 | U-02 Driver | A-02 views | R-23 Seat booking | Bookings on own departure: passengers, seats and pickup points | S-03, S-04 | The driver sees who to pick up and where | Must | FT-105 | J-18 | — (new) | proposed |
+| FT-108 | U-02 Driver | A-17 starts | R-22 Shared departure | Own departure, within its time window | S-04 | Booked passengers see the departure "In progress" and can track it | Must | FT-107 | J-18 | — (new) | proposed |
+| FT-109 | U-02 Driver | A-18 completes | R-22 Shared departure | Own departure in progress, at the destination | S-04 | Every booking on the departure is completed and payment is requested where still due | Must | FT-108 | J-18 | — (new) | proposed |
+| FT-110 | U-02 Driver | A-14 cancels | R-22 Shared departure | Own departure before it starts, with a reason | S-03, S-04 | Every booked passenger is told, offered other departures and refunded any amount paid | Must | FT-103 | J-18 | — (new) | proposed |
+| FT-111 | U-05 System | A-10 rejects | R-23 Seat booking | Bookings for more seats than are left, or after the configurable booking cut-off | S-11 | The customer is told the departure is full or closed | Must | FT-105 | J-17 | — (new) | proposed |
+| FT-112 | U-01 Customer | A-19 pays | R-08 Payment | Own seat booking, by any supported method (card, transfer, wallet or cash) | S-01, S-02 | The customer sees a receipt for the seats | Must | FT-105, FT-016 | J-17 | — (new) | proposed |
+| FT-113 | U-04 Admin | A-03 edits | R-07 Fare rule | Payment at booking for inter-state rides and seat bookings: none, a deposit (percentage) or the full fare; default none | S-08, S-09 | New inter-state bookings ask for the configured amount at booking | Must | FT-062 | J-10 | — (new) | proposed |
+| FT-114 | U-01 Customer | A-19 pays | R-08 Payment | A deposit or the full fare at booking, for an inter-state ride or seat booking, when the setting requires it | S-01, S-02 | The booking is confirmed only after the payment succeeds | Must | FT-113, FT-020, FT-016 | J-03 | — (new) | proposed |
+| FT-115 | U-01 Customer | A-31 tops up | R-24 Wallet | Own wallet, by card or bank transfer through the payment provider | S-01, S-02 | The new balance shows once the provider confirms the payment | Must | FT-003, FT-016 | J-19 | — (new) | proposed |
+| FT-116 | U-01 Customer | A-02 views | R-24 Wallet | Own balance and transactions | S-01, S-02 | The customer sees the balance and every top-up, payment and refund | Must | FT-115 | J-19 | — (new) | proposed |
+| FT-117 | U-01 Customer | A-19 pays | R-08 Payment | Own ride or seat booking, from the wallet balance | S-01, S-02 | The fare is taken from the balance and a receipt is shown; a balance that is too low is refused with the amount missing | Must | FT-115, FT-036 | J-19 | — (new) | proposed |
 
 ## Coverage matrix
 Generated from the Features table (approved and proposed features only); don't edit it by hand. Each cell lists the actions a user can take on a resource. An empty cell is not an error, but it is worth a look: who can change or remove this resource?
 
 <!-- matrix:start -->
-| User \ Resource | Customer account | Driver profile | Driver document | Vehicle | Ride | Fare estimate | Fare rule | Payment | Driver location | Rating | Support ticket | Payout | Driver earnings | Staff account | Notification | Audit entry | Business report | Service area | SOS alert | Delivery order | Assistant connection |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| U-01 Customer | creates, signs in, edits, signs out, removes |  |  |  | requests, views, cancels, schedules, shares | views |  | pays | tracks | rates | creates |  |  |  |  |  |  |  | creates | creates | creates, removes |
-| U-02 Driver |  | creates, views, signs in, edits | creates | creates | accepts, declines, starts, completes, cancels, views |  |  | edits |  | rates | creates | views | views |  |  |  |  |  | creates | accepts, completes |  |
-| U-03 Operations agent | suspends | views, approves, declines, suspends |  |  | searches, filters, assigns, cancels |  |  | refunds | tracks |  | views, edits, assigns |  |  | signs in |  |  |  |  | views, edits |  | creates, removes |
-| U-04 Admin |  |  |  |  |  |  | edits |  |  |  |  | views, approves |  | signs in, creates, archives |  | searches | views | edits |  |  |  |
-| U-05 System | verifies | verifies | verifies |  | matches, assigns, rejects, verifies | calculates |  |  | records |  |  | creates | calculates |  | notifies | records |  |  | creates |  | rejects |
-| U-06 Payment provider |  |  |  |  |  |  |  | edits |  |  |  |  |  |  |  |  |  |  |  |  |  |
-| U-07 Trusted contact |  |  |  |  | views |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
-| U-08 AI assistant |  |  |  |  | requests, schedules, views, cancels, searches | views |  |  |  |  | views |  |  |  |  |  | views |  |  |  |  |
+| User \ Resource | Customer account | Driver profile | Driver document | Vehicle | Ride | Fare estimate | Fare rule | Payment | Driver location | Rating | Support ticket | Payout | Driver earnings | Staff account | Notification | Audit entry | Business report | Service area | SOS alert | Delivery order | Assistant connection | Shared departure | Seat booking | Wallet |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| U-01 Customer | creates, signs in, edits, signs out, removes |  |  |  | requests, views, cancels, schedules, shares | views |  | pays | tracks | rates | creates |  |  |  |  |  |  |  | creates | creates | creates, removes | views | creates, cancels | tops up, views |
+| U-02 Driver |  | creates, views, signs in, edits | creates | creates | accepts, declines, starts, completes, cancels, views |  |  | edits |  | rates | creates | views | views |  |  |  |  |  | creates | accepts, completes |  | creates, starts, completes, cancels | views |  |
+| U-03 Operations agent | suspends | views, approves, declines, suspends |  |  | searches, filters, assigns, cancels |  |  | refunds | tracks |  | views, edits, assigns |  |  | signs in |  |  |  |  | views, edits |  | creates, removes |  |  |  |
+| U-04 Admin |  |  |  |  |  |  | edits |  |  |  |  | views, approves |  | signs in, creates, archives |  | searches | views | edits |  |  |  |  |  |  |
+| U-05 System | verifies | verifies | verifies |  | matches, assigns, rejects, verifies | calculates |  |  | records |  |  | creates | calculates |  | notifies | records |  |  | creates |  | rejects |  | rejects |  |
+| U-06 Payment provider |  |  |  |  |  |  |  | edits |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+| U-07 Trusted contact |  |  |  |  | views |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+| U-08 AI assistant |  |  |  |  | requests, schedules, views, cancels, searches | views |  |  |  |  | views |  |  |  |  |  | views |  |  |  |  |  |  |  |
 <!-- matrix:end -->
 
 ## Gaps
 Questions found while building the lists that the features don't answer yet. Each needs a decision: add a feature (as `proposed`), or note here that it is intentionally missing.
 
 - **Number of apps.** Decided 2026-11-26 (docs/reviews/2026-11-26-FEATURES.md): 8 apps. Customer website and mobile app, driver website and mobile app, one admin website (S-08) and one admin desktop and mobile app (S-09) that serve both operations and admin staff by role, the api (S-11) and a background worker (S-12). The separate operations apps and the admin mobile app (S-05, S-06, S-07, S-10) are retired.
-- **How inter-state trips work.** Is an inter-state ride a private car for one customer, or do customers book seats in a shared vehicle on a fixed route and departure time? Who pays for the driver's return trip? Are inter-state trips scheduled only (as drafted) or also bookable now? Deferred 2026-11-26: not yet clear how inter-state trips would work, especially for drivers' return trips. Must be answered before the milestone with J-03 and J-06 is planned (FT-020, FT-042, FT-065, FT-068).
-- **Payment methods and timing.** Cash, card, bank transfer and a wallet are all common in Nigeria. Which are in the MVP? Do scheduled or inter-state rides need payment or a deposit at booking? The payment provider is a vendor choice and belongs in the PRD's open decisions.
+- **How inter-state trips work.** Decided 2026-11-26 (docs/reviews/2026-11-26-FEATURES-2.md): customers can book both a private car (FT-020) and seats on a driver's shared departure (J-17, J-18, proposed). Inter-state trips are scheduled only, with pickup within a time window (configurable). Still open: reimbursing drivers' return trips, for management to discuss; and whether drivers may set their own seat price (drafted as fixed by the route's fare rule).
+- **Payment methods and timing.** Decided 2026-11-26 (docs/reviews/2026-11-26-FEATURES-2.md): the MVP supports every method: cash, card, bank transfer and a Chitty wallet (J-19, proposed). Whether inter-state bookings need a deposit or full payment at booking is an admin setting (FT-113, FT-114, proposed; default none). Payment providers: Paystack and OPay. Still open: which provider handles which method, and which sends payouts.
 - **Cash and commission.** On cash trips the driver holds Chitty's commission. Drafted as deducted from the next payout (FT-037, FT-070). What happens when a driver's cash collected exceeds what Chitty owes them? Deferred 2026-11-26: for management to answer.
 - **Contact between customer and driver.** In-app calling or chat with masked phone numbers is basic safety and isn't drafted yet. Add it as a feature?
 - **Staff roles.** Drafted roles: operations, admin, finance, HR. Answered 2026-11-26: HR in the product does not keep employee records. Deferred for management: what HR does in the product beyond that, and whether drivers count as staff.

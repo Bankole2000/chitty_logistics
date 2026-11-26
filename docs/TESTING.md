@@ -1,6 +1,6 @@
 # Testing and Acceptance
 
-Status: Draft | Owner: @bankole2000 | Version: 0.2 | Last updated: 2026-11-26
+Status: Draft | Owner: @bankole2000 | Version: 0.3 | Last updated: 2026-11-26
 References: FEATURES.md, PRD.md, TECHNICAL.md
 
 ## Strategy
@@ -39,6 +39,8 @@ Test data: isolated per environment; synthetic only.
 | TC-012 | FR-030, FR-031, FR-032 | J-12 | customer-web, customer-mobile-app, driver-mobile-app, admin-web, admin-app, api | A customer shares a ride and raises an SOS; a driver raises an SOS; an agent resolves both; the driver starts a trip with a wrong and then the right PIN | Contact follows the trip until it ends; SOS alerts reach operations within seconds with live location; wrong PIN refused |
 | TC-013 | FR-033, FR-034 | J-13 | api, worker, driver-mobile-app | Documents that don't match official records; a failed selfie check; a ride that leaves its route | Documents flagged; driver kept offline; route alert raised for operations |
 | TC-014 | FR-035 | J-14 | customer-web, customer-mobile-app, driver-mobile-app, api | A customer sends a package that a driver accepts and delivers with proof | Customer tracks the package and sees it delivered |
+| TC-015 | FR-036, FR-037 | J-15 | mcp, api, customer-mobile-app | A customer connects an assistant with view and book permissions; the assistant gets an estimate and requests a ride; the customer confirms in the app; the assistant tries to cancel without cancel permission; the customer revokes the connection | Ride booked only after confirmation; cancel refused; every assistant action in the audit log; after revoking, every request is refused |
+| TC-016 | FR-038 | J-16 | mcp, api, admin-web | An operations agent connects a read-only assistant, which searches tomorrow's scheduled rides with no driver and summarises open tickets; it tries to reply to a ticket and to read a report the role may not see; an admin revokes the connection | Results match the admin apps; reply and report refused; access ends when revoked |
 
 A feature's outcome (FEATURES.md) is the starting point for its expected result. Each journey (J-) gets at least one end-to-end test that walks its features in order. Cover failure cases, validation, authorization and critical user journeys. Use synthetic data; never production secrets or personal data. A journey that crosses apps is tested end to end at least once.
 

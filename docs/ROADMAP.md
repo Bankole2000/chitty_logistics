@@ -1,6 +1,6 @@
 # Development Roadmap
 
-Status: Draft | Owner: @bankole2000 | Version: 0.2 | Last updated: 2026-11-26
+Status: Draft | Owner: @bankole2000 | Version: 0.3 | Last updated: 2026-11-26
 References: FEATURES.md, PRD.md, DESIGN.md, TECHNICAL.md, TESTING.md
 
 ## Milestones
@@ -18,7 +18,7 @@ Managing milestones: a milestone is the set of journeys in its Journeys column. 
 | M3 - Book ahead, operations and support | Customers book rides in advance within a state and between states; operations watches rides live and answers support tickets | J-03, J-06, J-08, J-09 | Features of these journeys pass their acceptance tests on their surfaces |
 | M4 - Hardening and launch | Reliable, deployed product | — | Acceptance and security checks pass; release checklist approved |
 | M5 - Safety features | Customers and drivers share trips, raise SOS alerts that operations handles, and trips start only with the customer's PIN | J-12 | Features of these journeys pass their acceptance tests on their surfaces |
-| M6 - Post-launch (stretch) | Automated driver verification and trip monitoring; dispatch and delivery | J-13, J-14 | Defined per release |
+| M6 - Post-launch (stretch) | Automated driver verification and trip monitoring; dispatch and delivery; AI assistants through the MCP server | J-13, J-14, J-15, J-16 | Defined per release |
 
 ### M0 checklist
 Every project with a client and a server needs these in M0; drop the ones that don't apply.
