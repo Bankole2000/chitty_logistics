@@ -1,6 +1,6 @@
 # Deployment and Operations
 
-Status: Draft | Owner: {{owner}} | Version: 0.1 | Last updated: {{YYYY-MM-DD}}
+Status: Draft | Owner: @bankole2000 | Version: 0.2 | Last updated: 2026-11-26
 References: TECHNICAL.md, TESTING.md
 
 ## Environments and infrastructure
@@ -18,10 +18,14 @@ Infrastructure is defined in `infra/` (see TECHNICAL.md, Infrastructure). Change
 ### Where each app runs
 | App | Staging | Production | Release trigger |
 |---|---|---|---|
-| {{web}} | {{host/URL}} | {{host/URL}} | {{e.g. tag web-v* → release workflow → environment approval}} |
-| {{api}} | {{host/URL}} | {{host/URL}} | {{trigger}} |
-| {{mobile}} | {{TestFlight / internal testing track}} | {{App Store / Google Play}} | {{tag → signed build → manual store submission}} |
-| {{desktop}} | {{internal update channel}} | {{download site / Microsoft Store / Mac App Store}} | {{tag → signed build → publish to update channel}} |
+| customer-web | {{host/URL}} | {{host/URL}} | Tag `customer-web-v*` → release workflow → `release-customer-web` approval → deploy |
+| customer-mobile-app | TestFlight / Google Play internal testing | App Store / Google Play | Tag `customer-mobile-app-v*` → signed Android and iOS builds (`release-customer-mobile-app` approval) → manual store submission |
+| driver-web | {{host/URL}} | {{host/URL}} | Tag `driver-web-v*` → release workflow → `release-driver-web` approval → deploy |
+| driver-mobile-app | TestFlight / Google Play internal testing | App Store / Google Play | Tag `driver-mobile-app-v*` → signed Android and iOS builds (`release-driver-mobile-app` approval) → manual store submission |
+| admin-web | {{host/URL}} | {{host/URL}} | Tag `admin-web-v*` → release workflow → `release-admin-web` approval → deploy |
+| admin-app | TestFlight / Google Play internal testing; {{internal desktop update channel}} | App Store / Google Play; {{desktop download site or stores}} | Tag `admin-app-v*` → signed Android, iOS and desktop builds (`release-admin-app` approval) → store submission and desktop update channel |
+| api | {{host/URL}} | {{host/URL}} | Tag `api-v*` → release workflow → `release-api` approval → migrate and deploy |
+| worker | {{host}} | {{host}} | Tag `worker-v*` → release workflow → `release-worker` approval → deploy after the api release it needs |
 
 ## Configuration
 {{Required variable names per app (see apps/<app>/.env.example), secret store, access controls; never actual secrets. Client apps receive only public values at build time.}}
@@ -56,7 +60,7 @@ Remove this section if there is no desktop app.
 - Distribution: {{direct download, Microsoft Store, Mac App Store, Linux packages; which channels per platform}}
 - Auto-update: {{update mechanism, where the update feed is hosted, how updates are signed and verified}}
 - Rollout: {{update channels (beta/stable), staged rollout, how to halt an update}}
-- Lead time: obtaining signing certificates and store accounts can take days to weeks; plan it in ROADMAP.md (M2).
+- Lead time: obtaining signing certificates and store accounts can take days to weeks; plan it in ROADMAP.md, before M4 (launch).
 - Minimum supported version and forced upgrade: see TECHNICAL.md, API compatibility.
 
 ## Release checklist (per app)
@@ -80,4 +84,4 @@ Remove this section if there is no desktop app.
 {{Contact, severity, containment, recovery, communication and follow-up}}
 
 ## Approval
-{{Authorized release owner per app; no autonomous production deployment, infrastructure apply, store submission or desktop publish}}
+Release owner for every app: @bankole2000. No autonomous production deployment, infrastructure apply, store submission or desktop publish.

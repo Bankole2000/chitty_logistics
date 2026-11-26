@@ -4,21 +4,26 @@
 # @org/team names, and add or remove lines to match apps/ and packages/.
 
 # Default owner for everything not matched below
-* @{{default-owner}}
+* @bankole2000
 
 # Apps
-/apps/{{app 1, e.g. web}}/ @{{owner}}
-/apps/{{app 2, e.g. api}}/ @{{owner}}
-/apps/{{app 3, e.g. mobile}}/ @{{owner}}
+/apps/customer-web/ @bankole2000
+/apps/customer-mobile-app/ @bankole2000
+/apps/driver-web/ @bankole2000
+/apps/driver-mobile-app/ @bankole2000
+/apps/admin-web/ @bankole2000
+/apps/admin-app/ @bankole2000
+/apps/api/ @bankole2000
+/apps/worker/ @bankole2000
 
 # Shared code affects every consumer; one line per package if owners differ
-/packages/ @{{owner}}
+/packages/ @bankole2000
 
 # Infrastructure and release automation: changes here reach production
-/infra/ @{{owner}}
-/.github/workflows/release.yml @{{release owner}}
+/infra/ @bankole2000
+/.github/workflows/release.yml @bankole2000
 
 # Project rules and CI
-/docs/ @{{owner}}
-/AGENTS.md @{{owner}}
-/.github/ @{{owner}}
+/docs/ @bankole2000
+/AGENTS.md @bankole2000
+/.github/ @bankole2000

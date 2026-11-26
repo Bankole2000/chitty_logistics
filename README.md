@@ -1,6 +1,6 @@
-# {{Project name}}
+# Chitty Logistics
 
-{{One-line description of what this project does and for whom.}}
+Allows users to book instant or scheduled intra-city or inter-city safe and secure rides in Nigeria.
 
 ## Using this template (delete this section after setup)
 This repository was created from an idea-to-MVP starter kit for solo developers and teams of 2–5. It assumes a monorepo with one or more apps (e.g. web, API, mobile); a single-app project simply has one app. The kit does not provision GitHub configuration or deployment; the CI and Dependabot files are intentionally disabled (`.example`) until real commands are configured.
@@ -74,7 +74,7 @@ This section is the single source of truth for project commands. Other documents
 - Typecheck: {{command or N/A}}
 - Build: {{command}}
 
-### {{app 1, e.g. web}}
+### customer-web
 - Run locally: {{command}}
 - Test: {{command}}
 - E2E: {{command or N/A}}
@@ -82,7 +82,47 @@ This section is the single source of truth for project commands. Other documents
 - Typecheck: {{command or N/A}}
 - Build: {{command}}
 
-### {{app 2, e.g. api}}
+### customer-mobile-app
+- Run locally: {{command}}
+- Test: {{command}}
+- E2E: {{command or N/A}}
+- Lint: {{command}}
+- Typecheck: {{command or N/A}}
+- Build: {{command}}
+
+### driver-web
+- Run locally: {{command}}
+- Test: {{command}}
+- E2E: {{command or N/A}}
+- Lint: {{command}}
+- Typecheck: {{command or N/A}}
+- Build: {{command}}
+
+### driver-mobile-app
+- Run locally: {{command}}
+- Test: {{command}}
+- E2E: {{command or N/A}}
+- Lint: {{command}}
+- Typecheck: {{command or N/A}}
+- Build: {{command}}
+
+### admin-web
+- Run locally: {{command}}
+- Test: {{command}}
+- E2E: {{command or N/A}}
+- Lint: {{command}}
+- Typecheck: {{command or N/A}}
+- Build: {{command}}
+
+### admin-app
+- Run locally: {{command}}
+- Test: {{command}}
+- E2E: {{command or N/A}}
+- Lint: {{command}}
+- Typecheck: {{command or N/A}}
+- Build: {{command}}
+
+### api
 - Run locally: {{command}}
 - Test: {{command}}
 - Lint: {{command}}
@@ -90,11 +130,11 @@ This section is the single source of truth for project commands. Other documents
 - Build: {{command}}
 - Migrations: {{command or N/A}}
 
-### {{app 3, e.g. mobile}}
+### worker
 - Run locally: {{command}}
 - Test: {{command}}
-- E2E: {{command or N/A}}
 - Lint: {{command}}
+- Typecheck: {{command or N/A}}
 - Build: {{command}}
 
 Infrastructure (if `infra/` exists): plan {{command}} · validate/lint {{command}}. Applying is a release step; see `docs/DEPLOYMENT.md`.
@@ -113,4 +153,4 @@ Infrastructure (if `infra/` exists): plan {{command}} · validate/lint {{command
 - [Document reviews](docs/reviews/)
 
 ## License
-{{License name, e.g. MIT, or "Proprietary — all rights reserved". Add a matching LICENSE file.}}
+MIT. See [LICENSE](LICENSE).

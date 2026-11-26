@@ -52,21 +52,47 @@ jobs:
           echo "app=$app" >> "$GITHUB_OUTPUT"
           echo "version=$version" >> "$GITHUB_OUTPUT"
 
-  # ── Web client: build and deploy ─────────────────────────────
-  web:
+  # ── Web clients: build and deploy ────────────────────────────
+  customer-web:
     needs: resolve
-    if: needs.resolve.outputs.app == 'web'
+    if: needs.resolve.outputs.app == 'customer-web'
     runs-on: ubuntu-latest
-    environment: release-web
+    environment: release-customer-web
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - name: Fail until configured
         run: |
-          echo "Build the web app and deploy it to production, then smoke test."
+          echo "Build customer-web and deploy it to production, then smoke test."
           exit 1
 
-  # ── Server: build, migrate, deploy ───────────────────────────
+  driver-web:
+    needs: resolve
+    if: needs.resolve.outputs.app == 'driver-web'
+    runs-on: ubuntu-latest
+    environment: release-driver-web
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - name: Fail until configured
+        run: |
+          echo "Build driver-web and deploy it to production, then smoke test."
+          exit 1
+
+  admin-web:
+    needs: resolve
+    if: needs.resolve.outputs.app == 'admin-web'
+    runs-on: ubuntu-latest
+    environment: release-admin-web
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - name: Fail until configured
+        run: |
+          echo "Build admin-web and deploy it to production, then smoke test."
+          exit 1
+
+  # ── Servers: build, migrate, deploy ──────────────────────────
   api:
     needs: resolve
     if: needs.resolve.outputs.app == 'api'
@@ -77,51 +103,116 @@ jobs:
       - uses: actions/checkout@v7
       - name: Fail until configured
         run: |
-          echo "Build the server artifact, run backward-compatible migrations, deploy, smoke test."
+          echo "Build the api artifact, run backward-compatible migrations, deploy, smoke test."
+          exit 1
+
+  worker:
+    needs: resolve
+    if: needs.resolve.outputs.app == 'worker'
+    runs-on: ubuntu-latest
+    environment: release-worker
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - name: Fail until configured
+        run: |
+          echo "Build the worker artifact and deploy it after the api release it needs, then check that jobs run."
           exit 1
 
   # ── Mobile: one job per platform ─────────────────────────────
-  mobile-android:
+  customer-mobile-app-android:
     needs: resolve
-    if: needs.resolve.outputs.app == 'mobile'
+    if: needs.resolve.outputs.app == 'customer-mobile-app'
     runs-on: ubuntu-latest
-    environment: release-mobile
+    environment: release-customer-mobile-app
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v7
       - name: Fail until configured
         run: |
-          echo "Build a signed Android bundle (keystore from environment secrets) and upload it to the internal testing track."
+          echo "Build a signed Android bundle of customer-mobile-app (keystore from environment secrets) and upload it to the internal testing track."
           exit 1
 
-  mobile-ios:
+  customer-mobile-app-ios:
     needs: resolve
-    if: needs.resolve.outputs.app == 'mobile'
+    if: needs.resolve.outputs.app == 'customer-mobile-app'
     runs-on: macos-latest   # required for iOS; higher cost
-    environment: release-mobile
+    environment: release-customer-mobile-app
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
       - name: Fail until configured
         run: |
-          echo "Build and sign the iOS app (certificates from environment secrets) and upload it to TestFlight."
+          echo "Build and sign the iOS app of customer-mobile-app (certificates from environment secrets) and upload it to TestFlight."
           exit 1
 
-  # ── Desktop: one build per operating system ──────────────────
-  desktop:
+  driver-mobile-app-android:
     needs: resolve
-    if: needs.resolve.outputs.app == 'desktop'
+    if: needs.resolve.outputs.app == 'driver-mobile-app'
+    runs-on: ubuntu-latest
+    environment: release-driver-mobile-app
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - name: Fail until configured
+        run: |
+          echo "Build a signed Android bundle of driver-mobile-app (keystore from environment secrets) and upload it to the internal testing track."
+          exit 1
+
+  driver-mobile-app-ios:
+    needs: resolve
+    if: needs.resolve.outputs.app == 'driver-mobile-app'
+    runs-on: macos-latest   # required for iOS; higher cost
+    environment: release-driver-mobile-app
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - name: Fail until configured
+        run: |
+          echo "Build and sign the iOS app of driver-mobile-app (certificates from environment secrets) and upload it to TestFlight."
+          exit 1
+
+  admin-app-android:
+    needs: resolve
+    if: needs.resolve.outputs.app == 'admin-app'
+    runs-on: ubuntu-latest
+    environment: release-admin-app
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+      - name: Fail until configured
+        run: |
+          echo "Build a signed Android bundle of admin-app (keystore from environment secrets) and upload it to the internal testing track."
+          exit 1
+
+  admin-app-ios:
+    needs: resolve
+    if: needs.resolve.outputs.app == 'admin-app'
+    runs-on: macos-latest   # required for iOS; higher cost
+    environment: release-admin-app
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v7
+      - name: Fail until configured
+        run: |
+          echo "Build and sign the iOS app of admin-app (certificates from environment secrets) and upload it to TestFlight."
+          exit 1
+
+  # ── Desktop (admin-app): one build per operating system ──────
+  admin-app-desktop:
+    needs: resolve
+    if: needs.resolve.outputs.app == 'admin-app'
     strategy:
       fail-fast: true
       matrix:
         os: [windows-latest, macos-latest, ubuntu-latest]   # drop the platforms you don't ship
     runs-on: ${{ matrix.os }}
-    environment: release-desktop
+    environment: release-admin-app
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
       - name: Fail until configured
         run: |
-          echo "Build the desktop app for ${{ matrix.os }}, sign it (Windows code signing / macOS Developer ID),"
+          echo "Build the admin-app desktop app for ${{ matrix.os }}, sign it (Windows code signing / macOS Developer ID),"
           echo "notarize it on macOS, and publish it to the update channel as a draft for the release owner."
           exit 1

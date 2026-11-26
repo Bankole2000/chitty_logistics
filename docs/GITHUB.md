@@ -1,12 +1,12 @@
 # GitHub Management Specification
 
-Status: Draft | Owner: {{owner}} | Version: 0.1 | Last updated: {{YYYY-MM-DD}}
+Status: Draft | Owner: @bankole2000 | Version: 0.2 | Last updated: 2026-11-26
 
 ## Configuration
-- Repository: {{owner/repo}}
-- Project: {{owner, project number or ID}}
-- Default branch: {{main}}
-- Branch protection: a ruleset on the default branch that blocks deletion and force-pushes and requires pull requests with {{0 approvals for a solo owner, or 1+ for a team}}. Once CI runs on pull requests, also require the `ci-ok` status check, and only that one (it summarizes the per-app CI jobs, which are skipped when their app is unchanged). Teams also require review from code owners (`.github/CODEOWNERS`). Use least-privilege credentials. Never store tokens in this file.
+- Repository: Bankole2000/chitty_logistics
+- Project: none yet; states are kept in labels (see [Without a Project](#without-a-project)) until a Project is linked with `--project` or `--project-from`.
+- Default branch: main
+- Branch protection: a ruleset on the default branch that blocks deletion and force-pushes and requires pull requests with 0 approvals (one person owns everything, and GitHub does not let anyone approve their own pull requests; raise it to 1+ when a second reviewer joins). Once CI runs on pull requests, also require the `ci-ok` status check, and only that one (it summarizes the per-app CI jobs, which are skipped when their app is unchanged). Teams also require review from code owners (`.github/CODEOWNERS`). Use least-privilege credentials. Never store tokens in this file.
 - `bash scripts/setup-github.sh --all --apps <app1,app2,…> --approvals <n> --project <number>` links the Project and creates its custom fields, the labels, the milestones from ROADMAP.md and the ruleset, and removes GitHub's unused default labels (`--dry-run` first shows what would change). Without a Project, leave out `--project` to get the label fallback, or use `--project-from <number>` to copy a template Project that already has the fields, Status options and views (the owner keeps one, "MVP project template"; its README lists what it holds). The script adds missing Status options (In Review, Blocked) itself while a Project has no items. Re-run it with `--required-check ci-ok` once CI runs. App labels come from `--apps`, or from the folders in `apps/` once they exist. In the ruleset UI the check is under Settings → Rules → Rulesets → the ruleset → "Require status checks to pass" → "Add checks" → `ci-ok`.
 
 ## Project fields
@@ -60,9 +60,9 @@ Use exactly one `type:` label, the `app:` label of each app the issue changes (n
 
 ### App
 One per app in `apps/`, plus one for shared code and one for repository-wide work. Names match the folder names.
-- `app:{{app 1, e.g. web}}`, `app:{{app 2, e.g. api}}`, `app:{{app 3, e.g. mobile}}` — Work in that app
+- `app:customer-web`, `app:customer-mobile-app`, `app:driver-web`, `app:driver-mobile-app`, `app:admin-web`, `app:admin-app`, `app:api`, `app:worker` — Work in that app
 - `app:packages` — Shared code in `packages/`
-- `app:infra` — Infrastructure-as-code in `infra/`
+- `app:infra` — Infrastructure-as-code in `infra/`, once ADR-002 decides to use it
 - `app:repo` — Repository-wide work (CI, tooling, docs)
 
 ### Area
