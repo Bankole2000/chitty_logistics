@@ -35,12 +35,12 @@ Every project with a client and a server needs these in M0; drop the ones that d
 ## Work breakdown
 | Task key | Outcome | App | Features | Requirement IDs | Tests | Milestone | Depends on | Priority | Issue |
 |---|---|---|---|---|---|---|---|---|---|
-| TASK-001 | The api runs locally: Cargo workspace, Postgres with PostGIS in docker-compose, migrations, configuration from .env, health check including the database, request IDs, standard error body, CORS from configuration | api | — | — | TC-000 | M0 | None | High | TBD |
-| TASK-002 | The OpenAPI spec is generated from the api into packages/api-contract, with a check that fails when it is out of date, and a Bruno collection that matches it | packages | — | — | TC-000 | M0 | TASK-001 | High | TBD |
-| TASK-003 | CI runs the api checks (format, lint, tests against Postgres, contract up to date) and reports `ci-ok` | repo | — | — | TC-000 | M0 | TASK-001, TASK-002 | High | TBD |
-| TASK-004 | Roles, permissions and audit entries: roles map to permissions (operations, admin, finance and HR seeded), a permission check every staff endpoint uses, and an audit entry for each staff change | api | FT-049, FT-063 | FR-019, FR-022 | TC-007, TC-010 | M1 | TASK-001 | High | TBD |
-| TASK-005 | Staff sign in with email, password and a second factor (TOTP), and sign out; the first admin is created by a command | api | FT-044, FT-062 | FR-019 | TC-007, TC-010 | M1 | TASK-004 | High | TBD |
-| TASK-006 | Admins invite staff with a role, and archive and restore them; an archived staff member is signed out and cannot sign in | api | FT-063, FT-064 | FR-019 | TC-010 | M1 | TASK-005 | High | TBD |
+| TASK-001 | The api runs locally: Cargo workspace, Postgres with PostGIS in docker-compose, migrations, configuration from .env, health check including the database, request IDs, standard error body, CORS from configuration | api | — | — | TC-000 | M0 | None | High | [#3](https://github.com/Bankole2000/chitty_logistics/issues/3) |
+| TASK-002 | The OpenAPI spec is generated from the api into packages/api-contract, with a check that fails when it is out of date, and a Bruno collection that matches it | packages | — | — | TC-000 | M0 | TASK-001 | High | [#4](https://github.com/Bankole2000/chitty_logistics/issues/4) |
+| TASK-003 | CI runs the api checks (format, lint, tests against Postgres, contract up to date) and reports `ci-ok` | repo | — | — | TC-000 | M0 | TASK-001, TASK-002 | High | [#5](https://github.com/Bankole2000/chitty_logistics/issues/5) |
+| TASK-004 | Roles, permissions and audit entries: roles map to permissions (operations, admin, finance and HR seeded), a permission check every staff endpoint uses, and an audit entry for each staff change | api | FT-049, FT-063 | FR-019, FR-022 | TC-007, TC-010 | M1 | TASK-001 | High | [#6](https://github.com/Bankole2000/chitty_logistics/issues/6) |
+| TASK-005 | Staff sign in with email, password and a second factor (TOTP), and sign out; the first admin is created by a command | api | FT-044, FT-062 | FR-019 | TC-007, TC-010 | M1 | TASK-004 | High | [#7](https://github.com/Bankole2000/chitty_logistics/issues/7) |
+| TASK-006 | Admins invite staff with a role, and archive and restore them; an archived staff member is signed out and cannot sign in | api | FT-063, FT-064 | FR-019 | TC-010 | M1 | TASK-005 | High | [#8](https://github.com/Bankole2000/chitty_logistics/issues/8) |
 
 ## Planning rules
 - Plan only the next useful milestone in detail; split large tasks. FEATURES.md is the whole map; tasks are created only for the next slice.
