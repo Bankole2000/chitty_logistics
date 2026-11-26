@@ -1,6 +1,6 @@
 # Features
 
-Status: Draft | Owner: @bankole2000 | Version: 0.3 | Last updated: 2026-11-26
+Status: Draft | Owner: @bankole2000 | Version: 0.4 | Last updated: 2026-11-26
 References: PRD.md (requirements FR-), ROADMAP.md (milestones)
 
 ## How this file works
@@ -28,6 +28,7 @@ Kinds: `person`, `app` (another program using the product), `agent` (a script or
 | U-05 | System | system | The product itself: checks on every request, fare and earnings calculations, ride matching, notifications and scheduled jobs. | Must |
 | U-06 | Payment provider | app | The payment gateway (vendor to be chosen) that takes card and transfer payments, confirms them by callback and sends payouts. | Must |
 | U-07 | Trusted contact | person | Someone a customer shares a live trip with; has no Chitty account. | Should |
+| U-08 | AI assistant | agent | An AI assistant (e.g. Claude) a customer or staff member has connected to Chitty through the MCP server; acts only for that person, within the permissions they granted. | Could |
 
 ## Actions
 Common verbs are listed; add the ones this product needs (e.g. `requests`, `accepts`, `pays`, `invites`) and remove those it doesn't.
@@ -90,6 +91,7 @@ Kinds: `stored` (kept in the database) or `derived` (calculated from stored data
 | R-18 | Service area | stored | — | The states and cities Chitty serves, and the inter-state routes it offers. |
 | R-19 | SOS alert | stored | R-05 | An emergency alert raised during a ride: who raised it, live location, status and resolution notes. |
 | R-20 | Delivery order | stored | R-01 | A dispatch or delivery job: pickup, drop-off, package details, recipient and proof of delivery. |
+| R-21 | Assistant connection | stored | — | Permission a customer or staff member gives an AI assistant: who granted it, what it may do (e.g. view rides, book, cancel; read-only for staff), when it was created and last used, and whether it has been revoked. |
 
 ## Surfaces
 Where a feature is offered: one row per app in `apps/` (from the project setup), plus SDKs or other packages people use directly.
@@ -108,6 +110,7 @@ Where a feature is offered: one row per app in `apps/` (from the project setup),
 | S-10 | Admin mobile app (retired) | — | Retired 2026-11-26: merged into S-09, the one desktop and mobile app for all staff. | Won't |
 | S-11 | Platform api | apps/api | The server every app uses: accounts, rides, matching, pricing, payments and live updates. | Must |
 | S-12 | Background worker | apps/worker | Runs work no request waits for: ride-offer timeouts, scheduled-ride assignment, reminders, notification sending and payout runs. | Must |
+| S-13 | MCP server | apps/mcp | Lets AI assistants act for a connected customer or staff member; calls the api through the contract like any other client. Proposed: not yet in the project setup. | Could |
 
 ## Journeys
 A journey is what one user does to reach a goal, as features in order. The Milestone column is generated from ROADMAP.md, where each milestone lists the journeys it delivers.
@@ -128,6 +131,8 @@ A journey is what one user does to reach a goal, as features in order. The Miles
 | J-12 | Ride safely | U-01 | Customers and drivers can get help and share their trip during a ride | FT-075, FT-076, FT-077, FT-078, FT-079, FT-080, FT-081 | M5 |
 | J-13 | Verify drivers and watch trips automatically | U-05 | Identity and trip risks are caught without waiting for a report | FT-082, FT-083, FT-084 | M6 |
 | J-14 | Send a package | U-01 | Have a package picked up and delivered (dispatch and delivery, stretch) | FT-085, FT-086, FT-087, FT-088 | M6 |
+| J-15 | Ride through an AI assistant | U-01 | Check prices and book, follow and cancel rides by asking an AI assistant | FT-089, FT-090, FT-091, FT-092, FT-093, FT-094, FT-095, FT-096, FT-097 | — |
+| J-16 | Ask operations questions through an AI assistant | U-03 | Look up rides, tickets and reports by asking an AI assistant, without it changing anything | FT-098, FT-099, FT-100, FT-101, FT-102 | — |
 
 ## Features
 | ID | User | Action | Resource | Scope | Surfaces | Outcome | Priority | Depends on | Journey | Requirements | Status |
@@ -220,20 +225,35 @@ A journey is what one user does to reach a goal, as features in order. The Miles
 | FT-086 | U-02 Driver | A-15 accepts | R-20 Delivery order | A delivery offered to them | S-04 | The driver sees the pickup and package details | Won't | FT-085 | J-14 | FR-035 | approved |
 | FT-087 | U-02 Driver | A-18 completes | R-20 Delivery order | Own delivery, with proof of delivery (photo or recipient code) | S-04 | The customer and recipient see the package as delivered | Won't | FT-086 | J-14 | FR-035 | approved |
 | FT-088 | U-01 Customer | A-23 tracks | R-09 Driver location | The driver carrying own delivery | S-01, S-02 | The customer sees the package on its way on a map | Won't | FT-086 | J-14 | FR-035 | approved |
+| FT-089 | U-01 Customer | A-01 creates | R-21 Assistant connection | Own; the customer chooses what the assistant may do (view rides, get prices, book, cancel) | S-01, S-02 | The assistant is connected with only the chosen permissions, and the connection shows in the customer's settings | Could | FT-003 | J-15 | — (new) | proposed |
+| FT-090 | U-08 AI assistant | A-02 views | R-06 Fare estimate | For the connected customer, for a pickup, drop-off and vehicle class | S-13 | The assistant gets the same estimate the customer would see in the app | Could | FT-089, FT-008 | J-15 | — (new) | proposed |
+| FT-091 | U-08 AI assistant | A-12 requests | R-05 Ride | Immediate ride for the connected customer; sent only after the customer confirms the pickup, drop-off and price in the Chitty app | S-13 | The ride is requested after the customer confirms; without confirmation nothing is booked | Could | FT-090, FT-009 | J-15 | — (new) | proposed |
+| FT-092 | U-08 AI assistant | A-13 schedules | R-05 Ride | Scheduled ride for the connected customer, with the same confirmation in the Chitty app | S-13 | The ride shows as "Scheduled" after the customer confirms | Could | FT-090, FT-019 | J-15 | — (new) | proposed |
+| FT-093 | U-08 AI assistant | A-02 views | R-05 Ride | The connected customer's active and upcoming rides, with driver and vehicle details and status | S-13 | The assistant can tell the customer who is coming, in which car, and when | Could | FT-089, FT-011 | J-15 | — (new) | proposed |
+| FT-094 | U-08 AI assistant | A-14 cancels | R-05 Ride | The connected customer's ride, after the customer confirms in the Chitty app with any cancellation fee shown | S-13 | The ride is cancelled only after confirmation, and the customer saw the fee first | Could | FT-093, FT-013 | J-15 | — (new) | proposed |
+| FT-095 | U-01 Customer | A-05 removes | R-21 Assistant connection | Own connection | S-01, S-02 | The assistant loses access at once | Could | FT-089 | J-15 | — (new) | proposed |
+| FT-096 | U-05 System | A-11 records | R-16 Audit entry | Every action an assistant takes, tagged with its connection | S-11, S-13 | Each assistant action can be traced to the connection and the person who granted it | Could | FT-089 | J-15 | — (new) | proposed |
+| FT-097 | U-05 System | A-10 rejects | R-21 Assistant connection | Assistant requests outside the granted permissions, from a revoked connection, or above a configurable rate limit | S-11, S-13 | The assistant gets a clear error and nothing changes | Could | FT-089 | J-15 | — (new) | proposed |
+| FT-098 | U-03 Operations agent | A-01 creates | R-21 Assistant connection | Own; read-only, limited to what the staff member's role may see | S-08, S-09 | The assistant is connected read-only, and the connection shows in the staff member's settings | Could | FT-044 | J-16 | — (new) | proposed |
+| FT-099 | U-08 AI assistant | A-06 searches | R-05 Ride | For the connected staff member, within their role (e.g. scheduled rides tomorrow with no driver) | S-13 | The assistant returns the same rides the staff member would find in the admin apps | Could | FT-098, FT-052 | J-16 | — (new) | proposed |
+| FT-100 | U-08 AI assistant | A-02 views | R-11 Support ticket | Open tickets, for the connected staff member, within their role | S-13 | The assistant can summarise the ticket queue without replying or changing status | Could | FT-098, FT-058 | J-16 | — (new) | proposed |
+| FT-101 | U-08 AI assistant | A-02 views | R-17 Business report | For connected staff whose role may see reports | S-13 | The assistant answers questions about rides, revenue and drivers with the report figures | Could | FT-098, FT-066 | J-16 | — (new) | proposed |
+| FT-102 | U-03 Operations agent | A-05 removes | R-21 Assistant connection | Own connection; admins can also revoke any staff connection | S-08, S-09 | The assistant loses access at once | Could | FT-098 | J-16 | — (new) | proposed |
 
 ## Coverage matrix
 Generated from the Features table (approved and proposed features only); don't edit it by hand. Each cell lists the actions a user can take on a resource. An empty cell is not an error, but it is worth a look: who can change or remove this resource?
 
 <!-- matrix:start -->
-| User \ Resource | Customer account | Driver profile | Driver document | Vehicle | Ride | Fare estimate | Fare rule | Payment | Driver location | Rating | Support ticket | Payout | Driver earnings | Staff account | Notification | Audit entry | Business report | Service area | SOS alert | Delivery order |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| U-01 Customer | creates, signs in, edits, signs out, removes |  |  |  | requests, views, cancels, schedules, shares | views |  | pays | tracks | rates | creates |  |  |  |  |  |  |  | creates | creates |
-| U-02 Driver |  | creates, views, signs in, edits | creates | creates | accepts, declines, starts, completes, cancels, views |  |  | edits |  | rates | creates | views | views |  |  |  |  |  | creates | accepts, completes |
-| U-03 Operations agent | suspends | views, approves, declines, suspends |  |  | searches, filters, assigns, cancels |  |  | refunds | tracks |  | views, edits, assigns |  |  | signs in |  |  |  |  | views, edits |  |
-| U-04 Admin |  |  |  |  |  |  | edits |  |  |  |  | views, approves |  | signs in, creates, archives |  | searches | views | edits |  |  |
-| U-05 System | verifies | verifies | verifies |  | matches, assigns, rejects, verifies | calculates |  |  | records |  |  | creates | calculates |  | notifies | records |  |  | creates |  |
-| U-06 Payment provider |  |  |  |  |  |  |  | edits |  |  |  |  |  |  |  |  |  |  |  |  |
-| U-07 Trusted contact |  |  |  |  | views |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+| User \ Resource | Customer account | Driver profile | Driver document | Vehicle | Ride | Fare estimate | Fare rule | Payment | Driver location | Rating | Support ticket | Payout | Driver earnings | Staff account | Notification | Audit entry | Business report | Service area | SOS alert | Delivery order | Assistant connection |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| U-01 Customer | creates, signs in, edits, signs out, removes |  |  |  | requests, views, cancels, schedules, shares | views |  | pays | tracks | rates | creates |  |  |  |  |  |  |  | creates | creates | creates, removes |
+| U-02 Driver |  | creates, views, signs in, edits | creates | creates | accepts, declines, starts, completes, cancels, views |  |  | edits |  | rates | creates | views | views |  |  |  |  |  | creates | accepts, completes |  |
+| U-03 Operations agent | suspends | views, approves, declines, suspends |  |  | searches, filters, assigns, cancels |  |  | refunds | tracks |  | views, edits, assigns |  |  | signs in |  |  |  |  | views, edits |  | creates, removes |
+| U-04 Admin |  |  |  |  |  |  | edits |  |  |  |  | views, approves |  | signs in, creates, archives |  | searches | views | edits |  |  |  |
+| U-05 System | verifies | verifies | verifies |  | matches, assigns, rejects, verifies | calculates |  |  | records |  |  | creates | calculates |  | notifies | records |  |  | creates |  | rejects |
+| U-06 Payment provider |  |  |  |  |  |  |  | edits |  |  |  |  |  |  |  |  |  |  |  |  |  |
+| U-07 Trusted contact |  |  |  |  | views |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+| U-08 AI assistant |  |  |  |  | requests, schedules, views, cancels, searches | views |  |  |  |  | views |  |  |  |  |  | views |  |  |  |  |
 <!-- matrix:end -->
 
 ## Gaps
@@ -249,6 +269,7 @@ Questions found while building the lists that the features don't answer yet. Eac
 - **Booking for someone else, saved places, promotions, referrals and tips.** None are drafted. Add any as features?
 - **Ratings with consequences.** Should a low average rating put a driver or customer up for review automatically?
 - **Data protection.** The Nigeria Data Protection Act 2023 applies to customers' and drivers' personal data, location history and NIN. Retention periods and consent belong in the PRD (NFR-) and need `review:privacy`.
+- **AI assistants (MCP server, J-15, J-16).** Drafted 2026-11-26 as proposed, priority Could. Open: whether to offer the customer server, the staff server or both (they could also be two separate servers); how a customer confirms an assistant's booking or cancellation in the Chitty app (push prompt or in-app screen); the sign-in flow assistants use to connect (OAuth); and which milestone, likely after M4 (launch). Payments, refunds and payouts are deliberately left out for assistants. Adding `apps/mcp` also needs a project setup review entry (README Commands, CI, CODEOWNERS, `app:mcp` label).
 
 ## Not features
 Requirements that are not user + action + resource stay in the PRD: quality targets (NFR-), constraints, and "works on every surface" requirements, which the Surfaces list covers.
