@@ -1,5 +1,7 @@
 //! Chitty Logistics api: one server for every client (ADR-001).
 
+pub mod audit;
+pub mod auth;
 pub mod config;
 pub mod error;
 pub mod health;
@@ -106,6 +108,11 @@ pub async fn serve(config: Config) -> Result<(), Box<dyn std::error::Error>> {
     if config.migrate_on_start {
         MIGRATOR.run(&db).await?;
         tracing::info!("migrations up to date");
+    }
+    // The server still starts if the database is down; permissions are then synced on the
+    // next start. A key missing from the database is held by no role, so checks fail closed.
+    if let Err(e) = auth::permissions::sync(&db).await {
+        tracing::error!(error = %e, "could not sync permissions with the database");
     }
     let listener = tokio::net::TcpListener::bind(config.bind).await?;
     tracing::info!(address = %config.bind, "api listening");

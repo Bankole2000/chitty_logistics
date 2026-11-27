@@ -1,5 +1,6 @@
 //! HTTP behaviour of the router: request IDs, the standard error body, CORS and health.
-//! Tests marked "database" need Postgres from docker-compose.yml (or DATABASE_URL).
+//! Tests marked "database" need Postgres from docker-compose.yml (or DATABASE_URL, which
+//! defaults to it through .cargo/config.toml).
 
 use std::sync::Arc;
 
@@ -163,15 +164,10 @@ async fn health_is_ok_with_the_database() {
     );
 }
 
-/// database
-#[tokio::test]
-async fn migrations_apply_and_enable_postgis() {
-    let c = config(None);
-    let db = api::pool(&c).unwrap();
-    api::MIGRATOR
-        .run(&db)
-        .await
-        .expect("migrations run (is Postgres running?)");
+/// database: runs in its own throwaway database with the migrations applied (#[sqlx::test]),
+/// never against the shared `chitty` database.
+#[sqlx::test]
+async fn migrations_apply_and_enable_postgis(db: sqlx::PgPool) {
     let version: String = sqlx::query_scalar("SELECT postgis_version()")
         .fetch_one(&db)
         .await

@@ -41,6 +41,8 @@ Significant modules within each component.
 | Component | Module | Responsibility | Dependencies | Requirements |
 |---|---|---|---|---|
 | {{Component}} | {{Module}} | {{Purpose}} | {{Dependencies}} | FR-001 |
+| api | `src/auth` (staff authorization) | Permission keys defined once in `src/auth/permissions.rs` and synced to the `permissions` table on startup; `StaffIdentity` extractor with `require(Permission)` returning 403 `forbidden`; only active staff hold permissions. Roles are data (`roles`, `role_permissions`, `staff_roles`; ADR-003). **Drafted default role sets, for the owner to change** (seeded in `migrations/20261127000000_staff_rbac.sql`): admin = every permission; operations = driver.view/approve/suspend, customer.view/suspend, ticket.view/reply/assign; finance = driver.view, payout.view/approve, refund.create, report.view; HR = staff.view only (PRD open decision: staff roles) | Postgres; sign-in (TASK-005) puts the identity on the request | FR-019 |
+| api | `src/audit` (audit entries) | `audit::record` writes an `audit_entries` row (who, action, record type and id, before/after JSON, reason, request id, time) inside the transaction of the change, so both commit or neither does; the table is append-only (a trigger rejects updates and deletes) | Postgres | FR-022 |
 
 ## Domain and data model
 Start from the resources (R-) in FEATURES.md: each stored resource becomes an entity, "Belongs to" becomes a relationship, and derived resources become queries or views. The users (U-) and the actions each may take (the coverage matrix) become the roles and permissions.

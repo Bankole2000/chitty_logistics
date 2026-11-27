@@ -5,6 +5,7 @@ All notable changes to this app are recorded here. Format based on [Keep a Chang
 ## [Unreleased]
 ### Added
 - Server skeleton: health check at `GET /health` including the database, request IDs (`x-request-id`), the standard error body, CORS from `API_CORS_ORIGINS`, migrations with PostGIS enabled.
+- Staff roles and permissions: staff accounts, roles (operations, admin, finance, HR with drafted permission sets), permission keys synced to the database on startup, a permission check that answers 403 `forbidden`, and append-only audit entries written in the same transaction as the change they record.
 ### Changed
 ### Fixed
 ### Removed
