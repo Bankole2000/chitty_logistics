@@ -1,0 +1,133 @@
+# CI for every pull request and push to main. Jobs use the same commands as the README
+# Commands section. Jobs for apps that do not exist yet stay in ci.yml.example until
+# their apps are created.
+#
+# How it works:
+# - "changes" works out which jobs a PR needs. A change to the Cargo workspace, the
+#   toolchain or this workflow runs every Rust job.
+# - Each job runs only when its files changed (it shows as skipped otherwise).
+# - "ci-ok" runs last and fails if any job failed or was cancelled. Make "ci-ok"
+#   the ONLY required status check in branch protection: requiring the jobs
+#   directly would block PRs whose jobs were skipped.
+#
+# Third-party actions are pinned to a full commit SHA (the version is in the comment).
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One run per PR (or branch); a new push cancels the superseded PR run. Runs on main
+# are never cancelled, so every merge commit gets a result.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      api: ${{ steps.filter.outputs['api'] }}
+      api-contract: ${{ steps.filter.outputs['api-contract'] }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: filter
+        uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
+        with:
+          # Root files that affect every Rust job: the Cargo workspace, toolchain and
+          # cargo config, and this workflow.
+          filters: |
+            shared: &shared
+              - 'Cargo.toml'
+              - 'Cargo.lock'
+              - 'rust-toolchain.toml'
+              - '.cargo/**'
+              - '.github/workflows/ci.yml'
+            api:
+              - *shared
+              - 'apps/api/**'
+              - 'docker-compose.yml'
+            api-contract:
+              - *shared
+              - 'apps/api/**'
+              - 'packages/api-contract/**'
+
+  api:
+    needs: changes
+    if: needs.changes.outputs['api'] == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # The same database as docker-compose.yml, on the same port, so the DATABASE_URL
+    # default in .cargo/config.toml works. Trust authentication: no password sits in the
+    # repository, and it only listens inside the runner.
+    services:
+      postgres:
+        image: postgis/postgis:17-3.5
+        env:
+          POSTGRES_HOST_AUTH_METHOD: trust
+          POSTGRES_DB: chitty
+        ports: ['127.0.0.1:15481:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d chitty"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 30
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install the Rust toolchain pinned in rust-toolchain.toml
+        run: |
+          channel=$(sed -n 's/^channel *= *"\(.*\)"/\1/p' rust-toolchain.toml)
+          rustup toolchain install "$channel" --profile minimal --component rustfmt,clippy
+          rustc --version
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - name: Format
+        run: cargo fmt --all --check
+      - name: Lint
+        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: Test
+        run: cargo test --workspace
+
+  api-contract:
+    needs: changes
+    if: needs.changes.outputs['api-contract'] == 'true' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Neither check needs the database (packages/api-contract/AGENTS.md).
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install the Rust toolchain pinned in rust-toolchain.toml
+        run: |
+          channel=$(sed -n 's/^channel *= *"\(.*\)"/\1/p' rust-toolchain.toml)
+          rustup toolchain install "$channel" --profile minimal
+          rustc --version
+      - uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+      - name: OpenAPI spec is up to date
+        run: cargo run -p api -- openapi --check
+      - name: Every path and method in the spec has a Bruno request
+        run: cargo test -p api --test contract
+
+  ci-ok:
+    if: always()
+    needs: [changes, api, api-contract]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Fail if any job failed or was cancelled
+        run: |
+          if ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}; then
+            echo "One or more jobs failed or were cancelled."
+            exit 1
+          fi
+          echo "All jobs passed or were skipped."
