@@ -66,6 +66,14 @@ Documents drafted or changed by an agent are reviewed by a human with `tools/doc
 ## Commands
 This section is the single source of truth for project commands. Other documents and agents refer here. Use "All apps" to check everything before a PR; use an app's block when working inside that app. There is one block per app, package with its own checks, and `infra`; add or delete blocks to match. Write N/A where a command doesn't apply. Keep the blocks separate (blank lines between them), so changes to different apps don't conflict.
 
+### Repository scripts
+- Agent workflow: `scripts/agent <command>` (or `node scripts/agent.mjs`); `scripts/agent help` lists the commands (docs/GITHUB.md, Agent workflow)
+- Run agents: `scripts/agent swarm --workers 2 --reviewers 1 --wait 120`, or one loop: `scripts/agent loop --role work --name worker-1` (docs/GITHUB.md, Running agents)
+- What needs you: `scripts/agent digest`
+- Test the scripts: `node --test scripts/test/`
+- Features check: `node scripts/check-features.mjs`
+- GitHub setup: `bash scripts/setup-github.sh --all  --dry-run` (without `--dry-run` it changes GitHub: owner only)
+
 ### All apps (repo root)
 Only the Rust apps exist so far; client commands are added with the first client.
 - Install: `cargo fetch` (Rust toolchain pinned in rust-toolchain.toml; Docker for the database)
