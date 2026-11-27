@@ -35,3 +35,4 @@ Podfile.lock linguist-generated=true
 # <lockfile, e.g. Cargo.lock> linguist-generated=true -diff
 # <generated contract, e.g. openapi/openapi.json> linguist-generated=true
 # <generated client code, e.g. packages/api-client/src/generated/**> linguist-generated=true
+packages/api-contract/openapi.json linguist-generated=true

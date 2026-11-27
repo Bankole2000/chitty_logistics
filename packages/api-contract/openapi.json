@@ -1,0 +1,146 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Chitty Logistics api",
+    "description": "The one server every Chitty Logistics client calls. Every error response has the `ErrorBody` shape (docs/TECHNICAL.md, Error responses).",
+    "license": {
+      "name": "MIT",
+      "identifier": "MIT"
+    },
+    "version": "0.1.0"
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:18081",
+      "description": "Local development"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Check the api and its database",
+        "description": "Returns 200 when the api and its database answer, and 503 when the database does not. Needs no authentication.",
+        "operationId": "health",
+        "responses": {
+          "200": {
+            "description": "The api and its database answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                },
+                "example": {
+                  "database": "ok",
+                  "status": "ok"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The api answers but its database does not.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                },
+                "example": {
+                  "database": "unavailable",
+                  "status": "degraded"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ErrorBody": {
+        "type": "object",
+        "description": "The body of every error response (docs/TECHNICAL.md, Error responses).",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ErrorDetail"
+          }
+        },
+        "example": {
+          "error": {
+            "code": "not_found",
+            "details": null,
+            "message": "The requested resource was not found.",
+            "request_id": "6f1c2b9e-1d2a-4c3b-9e8f-0a1b2c3d4e5f"
+          }
+        }
+      },
+      "ErrorDetail": {
+        "type": "object",
+        "description": "What went wrong, in a form clients can branch on and show.",
+        "required": [
+          "code",
+          "message",
+          "request_id",
+          "details"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Stable snake_case identifier clients branch on, e.g. `not_found`, `forbidden`,\n`unauthenticated`, `invalid_request`, `rate_limited`, `internal`. New codes may be\nadded; existing ones never change meaning.",
+            "example": "not_found"
+          },
+          "details": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Code-specific data (e.g. which fields are invalid), or null."
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable and safe to show; never contains internal details.",
+            "example": "The requested resource was not found."
+          },
+          "request_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The request's `x-request-id` (sent by the client or generated), also returned as a\nresponse header."
+          }
+        }
+      },
+      "Health": {
+        "type": "object",
+        "description": "Whether the api and its database answer.",
+        "required": [
+          "status",
+          "database"
+        ],
+        "properties": {
+          "database": {
+            "type": "string",
+            "description": "`ok`, or `unavailable` when the database does not answer.",
+            "example": "ok"
+          },
+          "status": {
+            "type": "string",
+            "description": "`ok` when everything answers, `degraded` when the database does not.",
+            "example": "ok"
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "health",
+      "description": "Liveness of the api and its database"
+    }
+  ]
+}
