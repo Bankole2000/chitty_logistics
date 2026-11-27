@@ -19,6 +19,7 @@ fn config(database_url: Option<&str>) -> Config {
     Config::from_lookup(move |name| match name {
         "DATABASE_URL" => url.clone().or_else(|| std::env::var("DATABASE_URL").ok()),
         "API_CORS_ORIGINS" => Some("http://allowed.test".into()),
+        "API_ENV" => Some("development".into()),
         _ => None,
     })
     .unwrap()

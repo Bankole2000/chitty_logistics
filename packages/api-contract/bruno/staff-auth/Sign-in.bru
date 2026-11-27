@@ -1,0 +1,33 @@
+meta {
+  name: Sign-in
+  type: http
+  seq: 2
+}
+
+docs {
+  First step: email and password (STAFF_EMAIL and STAFF_PASSWORD from your environment).
+  Stores the challenge for "Sign-in verify".
+}
+
+post {
+  url: {{baseUrl}}/staff/sign-in
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "{{process.env.STAFF_EMAIL}}",
+    "password": "{{process.env.STAFF_PASSWORD}}"
+  }
+}
+
+script:post-response {
+  if (res.status === 200) {
+    bru.setVar("staffChallenge", res.body.challenge);
+  }
+}
+
+assert {
+  res.status: eq 200
+}

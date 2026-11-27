@@ -7,7 +7,10 @@
 
 use std::{fmt, fs, io, path::Path};
 
-use utoipa::OpenApi;
+use utoipa::{
+    Modify, OpenApi,
+    openapi::security::{HttpAuthScheme, HttpBuilder, SecurityScheme},
+};
 
 use crate::{
     error::{ErrorBody, ErrorDetail},
@@ -29,11 +32,44 @@ pub const GENERATE_COMMAND: &str =
         license(name = "MIT", identifier = "MIT"),
     ),
     servers((url = "http://127.0.0.1:18081", description = "Local development")),
-    paths(crate::health::health),
+    paths(
+        crate::health::health,
+        crate::auth::sign_in::enrol,
+        crate::auth::sign_in::sign_in,
+        crate::auth::sign_in::verify,
+        crate::auth::sign_in::sign_out,
+        crate::auth::sign_in::me,
+    ),
     components(schemas(ErrorBody, ErrorDetail, Health)),
-    tags((name = "health", description = "Liveness of the api and its database")),
+    modifiers(&StaffSessionScheme),
+    tags(
+        (name = "health", description = "Liveness of the api and its database"),
+        (name = "staff-auth", description = "Staff sign-in with email, password and an authenticator code; sessions and sign-out"),
+    ),
 )]
 pub struct ApiDoc;
+
+/// The `staff_session` security scheme: the opaque token from `POST /staff/sign-in/verify`,
+/// sent as `Authorization: Bearer <token>` (ADR-003).
+struct StaffSessionScheme;
+
+impl Modify for StaffSessionScheme {
+    fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
+        if let Some(components) = openapi.components.as_mut() {
+            components.add_security_scheme(
+                "staff_session",
+                SecurityScheme::Http(
+                    HttpBuilder::new()
+                        .scheme(HttpAuthScheme::Bearer)
+                        .description(Some(
+                            "Opaque staff session token from POST /staff/sign-in/verify.",
+                        ))
+                        .build(),
+                ),
+            );
+        }
+    }
+}
 
 /// The spec as pretty-printed JSON with a trailing newline. Paths, schemas and properties
 /// are sorted, so the output only changes when the api does.

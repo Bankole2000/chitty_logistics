@@ -41,7 +41,8 @@ Significant modules within each component.
 | Component | Module | Responsibility | Dependencies | Requirements |
 |---|---|---|---|---|
 | {{Component}} | {{Module}} | {{Purpose}} | {{Dependencies}} | FR-001 |
-| api | `src/auth` (staff authorization) | Permission keys defined once in `src/auth/permissions.rs` and synced to the `permissions` table on startup; `StaffIdentity` extractor with `require(Permission)` returning 403 `forbidden`; only active staff hold permissions. Roles are data (`roles`, `role_permissions`, `staff_roles`; ADR-003). **Drafted default role sets, for the owner to change** (seeded in `migrations/20261127000000_staff_rbac.sql`): admin = every permission; operations = driver.view/approve/suspend, customer.view/suspend, ticket.view/reply/assign; finance = driver.view, payout.view/approve, refund.create, report.view; HR = staff.view only (PRD open decision: staff roles) | Postgres; sign-in (TASK-005) puts the identity on the request | FR-019 |
+| api | `src/auth` (staff authorization) | Permission keys defined once in `src/auth/permissions.rs` and synced to the `permissions` table on startup; `StaffIdentity` extractor with `require(Permission)` returning 403 `forbidden`; only active staff hold permissions. Roles are data (`roles`, `role_permissions`, `staff_roles`; ADR-003). **Drafted default role sets, for the owner to change** (seeded in `migrations/20261127000000_staff_rbac.sql`): admin = every permission; operations = driver.view/approve/suspend, customer.view/suspend, ticket.view/reply/assign; finance = driver.view, payout.view/approve, refund.create, report.view; HR = staff.view only (PRD open decision: staff roles) | Postgres; sign-in (`src/auth/session.rs`) puts the identity on the request | FR-019 |
+| api | `src/auth` (staff sign-in and sessions) | Two-step sign-in (`sign_in.rs`): email and password (argon2id) give a challenge, a TOTP code (RFC 6238, SHA-1, 6 digits, 30 s, one step of drift, each step accepted once) completes it. First admin from `api create-admin`, which prints a one-time enrolment token for `POST /staff/enrolment`. Sessions (`session.rs`, ADR-003): 256-bit tokens, only their SHA-256 hash stored, idle expiry moved forward on each use, refused once revoked or the staff member is not active. TOTP secrets encrypted with AES-256-GCM (`TOTP_ENCRYPTION_KEY`, staff id as associated data). Failed attempts limited per account and per IP (`rate_limit.rs`) | Postgres | FR-019 |
 | api | `src/audit` (audit entries) | `audit::record` writes an `audit_entries` row (who, action, record type and id, before/after JSON, reason, request id, time) inside the transaction of the change, so both commit or neither does; the table is append-only (a trigger rejects updates and deletes) | Postgres | FR-022 |
 
 ## Domain and data model
@@ -53,6 +54,11 @@ Start from the resources (R-) in FEATURES.md: each stored resource becomes an en
 | ID | Operation | Input/output | Auth and errors | Requirement |
 |---|---|---|---|---|
 | API-001 | {{Method/path or operation}} | {{Contract}} | {{Policy/errors}} | FR-001 |
+| API-STAFF-01 | `POST /staff/enrolment` | `{token, password}` → `{challenge, expires_at, totp: {secret, otpauth_uri, algorithm, digits, period}}` | Public; one-time enrolment token. 401 `invalid_enrolment_token`, 422 `invalid_request` (password length) | FR-019 |
+| API-STAFF-02 | `POST /staff/sign-in` | `{email, password}` → `{challenge, expires_at}` | Public. 401 `invalid_credentials` (same for unknown email), 403 `totp_enrolment_required`, 429 `rate_limited` with `Retry-After` | FR-019 |
+| API-STAFF-03 | `POST /staff/sign-in/verify` | `{challenge, code}` → `{token, token_type: "Bearer", expires_at, staff}` | Public. 401 `invalid_code`, 401 `challenge_expired` (expired, used or unknown), 429 `rate_limited` | FR-019 |
+| API-STAFF-04 | `POST /staff/sign-out` | → 204 | Staff session. 401 `unauthenticated` | FR-019 |
+| API-STAFF-05 | `GET /staff/me` | → `{id, email, name, status, roles, permissions}` | Staff session. 401 `unauthenticated` | FR-019 |
 
 {{External integrations, timeouts, retries, idempotency, events/workflows where needed}}
 

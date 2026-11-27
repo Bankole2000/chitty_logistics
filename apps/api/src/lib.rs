@@ -72,6 +72,12 @@ pub fn router(state: AppState) -> Router {
     let config = state.config.clone();
     Router::new()
         .route("/health", get(health::health))
+        .merge(auth::sign_in::routes())
+        // The sign-in layer: turns a valid session token into a StaffIdentity.
+        .route_layer(middleware::from_fn_with_state(
+            state.clone(),
+            auth::session::authenticate,
+        ))
         .fallback(error::not_found)
         .with_state(state)
         .layer(
@@ -115,15 +121,25 @@ pub async fn serve(config: Config) -> Result<(), Box<dyn std::error::Error>> {
     if let Err(e) = auth::permissions::sync(&db).await {
         tracing::error!(error = %e, "could not sync permissions with the database");
     }
+    if config.uses_development_totp_key() {
+        tracing::warn!(
+            "TOTP_ENCRYPTION_KEY is not set: using the public development-only key (API_ENV=development). Never run a deployed environment like this"
+        );
+    }
+    auth::secrets::warm_up();
     let listener = tokio::net::TcpListener::bind(config.bind).await?;
     tracing::info!(address = %config.bind, "api listening");
     let state = AppState {
         db,
         config: Arc::new(config),
     };
-    axum::serve(listener, router(state))
-        .with_graceful_shutdown(shutdown_signal())
-        .await?;
+    // Connection info gives the client's address for sign-in rate limits.
+    axum::serve(
+        listener,
+        router(state).into_make_service_with_connect_info::<std::net::SocketAddr>(),
+    )
+    .with_graceful_shutdown(shutdown_signal())
+    .await?;
     Ok(())
 }
 

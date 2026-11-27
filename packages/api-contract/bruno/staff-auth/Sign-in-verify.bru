@@ -1,0 +1,35 @@
+meta {
+  name: Sign-in verify
+  type: http
+  seq: 3
+}
+
+docs {
+  Second step: the challenge from "Sign-in" or "Enrolment" and the current 6-digit code
+  from your authenticator app (set STAFF_TOTP_CODE in your environment just before
+  sending). Stores the session token for the requests below.
+}
+
+post {
+  url: {{baseUrl}}/staff/sign-in/verify
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "challenge": "{{staffChallenge}}",
+    "code": "{{process.env.STAFF_TOTP_CODE}}"
+  }
+}
+
+script:post-response {
+  if (res.status === 200) {
+    bru.setVar("staffSessionToken", res.body.token);
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.token_type: eq Bearer
+}
