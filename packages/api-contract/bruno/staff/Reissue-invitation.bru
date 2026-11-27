@@ -1,0 +1,28 @@
+meta {
+  name: Reissue invitation
+  type: http
+  seq: 4
+}
+
+docs {
+  Sends a new invitation to an invited staff member; earlier ones stop working. Needs
+  staff.create. 409 not_invited once they have accepted.
+}
+
+post {
+  url: {{baseUrl}}/staff/:id/invitation
+  body: none
+  auth: bearer
+}
+
+params:path {
+  id: {{staffId}}
+}
+
+auth:bearer {
+  token: {{staffSessionToken}}
+}
+
+assert {
+  res.status: eq 200
+}

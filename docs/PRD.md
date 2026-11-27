@@ -1,6 +1,6 @@
 # Product Requirements Document
 
-Status: Draft | Owner: @bankole2000 | Version: 0.3 | Last updated: 2026-11-26
+Status: Draft | Owner: @bankole2000 | Version: 0.4 | Last updated: 2026-11-27
 References: FEATURES.md (users U-, resources R-, surfaces S-, journeys J-, features FT-)
 
 FEATURES.md feeds this document. When features are approved or changed there, the requirements below are updated to match, and each requirement lists the features it covers.
@@ -118,6 +118,7 @@ Resources (R-) in FEATURES.md are the main glossary terms; define them here once
 - Cash and commission: how Chitty collects its commission on cash trips when a driver's cash exceeds what Chitty owes them. Owner: management. Needed before M2 is planned (J-11).
 - Staff roles: what HR does in the product (not employee records) and whether drivers count as staff. Owner: management. Needed before M1 is planned (J-10).
 - Payment providers: Paystack and OPay are chosen; still open is which provider handles which method (card, transfer, wallet top-ups) and which sends driver payouts. Owner: @bankole2000. Needed before M2 is planned (J-02, J-11).
+- Email provider for staff invitations (and later other email): not chosen. Until it is, invitations are delivered only in development (logged); other environments refuse to invite staff (TASK-006, `InvitationSender` in apps/api). Owner: @bankole2000. Needed before staff are invited in staging or production (J-10).
 - Data protection under the Nigeria Data Protection Act 2023: retention periods and consent for personal data, location history and NIN (`review:privacy`). Owner: {{owner}}. Needed by {{date}}.
 
 ## Approval

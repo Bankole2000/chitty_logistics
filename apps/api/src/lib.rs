@@ -7,9 +7,8 @@ pub mod error;
 pub mod health;
 pub mod openapi;
 pub mod request_id;
+pub mod staff;
 pub mod state;
-
-use std::sync::Arc;
 
 use axum::{
     Router,
@@ -73,6 +72,7 @@ pub fn router(state: AppState) -> Router {
     Router::new()
         .route("/health", get(health::health))
         .merge(auth::sign_in::routes())
+        .merge(staff::routes())
         // The sign-in layer: turns a valid session token into a StaffIdentity.
         .route_layer(middleware::from_fn_with_state(
             state.clone(),
@@ -129,10 +129,7 @@ pub async fn serve(config: Config) -> Result<(), Box<dyn std::error::Error>> {
     auth::secrets::warm_up();
     let listener = tokio::net::TcpListener::bind(config.bind).await?;
     tracing::info!(address = %config.bind, "api listening");
-    let state = AppState {
-        db,
-        config: Arc::new(config),
-    };
+    let state = AppState::new(db, config);
     // Connection info gives the client's address for sign-in rate limits.
     axum::serve(
         listener,

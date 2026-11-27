@@ -1,0 +1,35 @@
+meta {
+  name: Archive
+  type: http
+  seq: 6
+}
+
+docs {
+  Archives a staff member who has left (needs staff.archive): every session ends at once
+  and sign-in is refused. 409 cannot_archive_self, last_admin or already_archived.
+}
+
+post {
+  url: {{baseUrl}}/staff/:id/archive
+  body: json
+  auth: bearer
+}
+
+params:path {
+  id: {{staffId}}
+}
+
+auth:bearer {
+  token: {{staffSessionToken}}
+}
+
+body:json {
+  {
+    "reason": "Left the company"
+  }
+}
+
+assert {
+  res.status: eq 200
+  res.body.status: eq archived
+}

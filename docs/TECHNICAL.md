@@ -1,6 +1,6 @@
 # Technical Specification
 
-Status: Draft | Owner: @bankole2000 | Version: 0.4 | Last updated: 2026-11-26
+Status: Draft | Owner: @bankole2000 | Version: 0.5 | Last updated: 2026-11-27
 References: FEATURES.md, PRD.md, DESIGN.md
 
 ## Architecture overview
@@ -43,6 +43,7 @@ Significant modules within each component.
 | {{Component}} | {{Module}} | {{Purpose}} | {{Dependencies}} | FR-001 |
 | api | `src/auth` (staff authorization) | Permission keys defined once in `src/auth/permissions.rs` and synced to the `permissions` table on startup; `StaffIdentity` extractor with `require(Permission)` returning 403 `forbidden`; only active staff hold permissions. Roles are data (`roles`, `role_permissions`, `staff_roles`; ADR-003). **Drafted default role sets, for the owner to change** (seeded in `migrations/20261127000000_staff_rbac.sql`): admin = every permission; operations = driver.view/approve/suspend, customer.view/suspend, ticket.view/reply/assign; finance = driver.view, payout.view/approve, refund.create, report.view; HR = staff.view only (PRD open decision: staff roles) | Postgres; sign-in (`src/auth/session.rs`) puts the identity on the request | FR-019 |
 | api | `src/auth` (staff sign-in and sessions) | Two-step sign-in (`sign_in.rs`): email and password (argon2id) give a challenge, a TOTP code (RFC 6238, SHA-1, 6 digits, 30 s, one step of drift, each step accepted once) completes it. First admin from `api create-admin`, which prints a one-time enrolment token for `POST /staff/enrolment`. Sessions (`session.rs`, ADR-003): 256-bit tokens, only their SHA-256 hash stored, idle expiry moved forward on each use, refused once revoked or the staff member is not active. TOTP secrets encrypted with AES-256-GCM (`TOTP_ENCRYPTION_KEY`, staff id as associated data). Failed attempts limited per account and per IP (`rate_limit.rs`) | Postgres | FR-019 |
+| api | `src/staff` (staff accounts) | Invite (`invited` account plus a single-use invitation, which is an enrolment token valid for `STAFF_INVITE_TTL_HOURS`, default 168; accepting it through `POST /staff/enrolment` and the first code makes the account `active`), reissue invitations, change roles, archive (revokes every session at once, ends invitations) and restore (`active` with existing credentials if enrolled, else `invited`). Invitations go through the swappable `InvitationSender` (`invitation.rs`): development logs them, every other environment refuses (503) until an email provider is chosen. The last active holder of `staff.edit_role` cannot be archived or demoted (409 `last_admin`; checked by permission under a transaction advisory lock). Every change is audited in its transaction | Postgres; `src/auth`, `src/audit` | FR-019, FR-022 |
 | api | `src/audit` (audit entries) | `audit::record` writes an `audit_entries` row (who, action, record type and id, before/after JSON, reason, request id, time) inside the transaction of the change, so both commit or neither does; the table is append-only (a trigger rejects updates and deletes) | Postgres | FR-022 |
 
 ## Domain and data model
@@ -59,6 +60,12 @@ Start from the resources (R-) in FEATURES.md: each stored resource becomes an en
 | API-STAFF-03 | `POST /staff/sign-in/verify` | `{challenge, code}` → `{token, token_type: "Bearer", expires_at, staff}` | Public. 401 `invalid_code`, 401 `challenge_expired` (expired, used or unknown), 429 `rate_limited` | FR-019 |
 | API-STAFF-04 | `POST /staff/sign-out` | → 204 | Staff session. 401 `unauthenticated` | FR-019 |
 | API-STAFF-05 | `GET /staff/me` | → `{id, email, name, status, roles, permissions}` | Staff session. 401 `unauthenticated` | FR-019 |
+| API-STAFF-06 | `GET /staff`, `GET /staff/{id}` | → `{staff: [StaffMember]}` / `StaffMember` = `{id, email, name, status, roles, created_at, archived_at, invitation_expires_at}`; list not paginated (tens of staff) | `staff.view`. 401 `unauthenticated`, 403 `forbidden`, 404 `not_found` | FR-019 |
+| API-STAFF-07 | `POST /staff` | `{email, name, role, reason?}` → 201 `StaffMember` (status `invited`; never the token) | `staff.create`. 409 `email_taken`, 422 `invalid_request` (`details.fields`), 503 `invitation_delivery_unavailable` / `invitation_delivery_failed` (nothing created) | FR-019, FR-022 |
+| API-STAFF-08 | `POST /staff/{id}/invitation` | → `StaffMember`; new invitation, earlier ones end | `staff.create`. 404, 409 `not_invited`, 503 as above | FR-019, FR-022 |
+| API-STAFF-09 | `PATCH /staff/{id}` | `{role, reason?}` → `StaffMember`; replaces the roles | `staff.edit_role`. 404, 409 `last_admin`, 422 `invalid_request` | FR-019, FR-022 |
+| API-STAFF-10 | `POST /staff/{id}/archive` | `{reason}` → `StaffMember`; revokes every session, ends invitations | `staff.archive`. 404, 409 `cannot_archive_self` / `last_admin` / `already_archived`, 422 `invalid_request` | FR-019, FR-022 |
+| API-STAFF-11 | `POST /staff/{id}/restore` | `{reason}` → `StaffMember` (`active` if enrolled, else `invited`) | `staff.restore`. 404, 409 `not_archived`, 422 `invalid_request` | FR-019, FR-022 |
 
 {{External integrations, timeouts, retries, idempotency, events/workflows where needed}}
 

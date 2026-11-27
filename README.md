@@ -130,6 +130,7 @@ Only the Rust apps exist so far; client commands are added with the first client
 - Typecheck: `cargo check -p api --all-targets`
 - Build: `cargo build -p api --release`
 - First admin: `cargo run -p api -- create-admin --email <email> --name <name>` prints a one-time enrolment token (no default credentials exist); the admin sends it with a new password to `POST /staff/enrolment` and completes sign-in with a code from their authenticator app
+- Other staff: an admin invites them with `POST /staff`; with `API_ENV=development` the invitation token is written to the api log (look for "staff invitation"), and the invited person uses it with `POST /staff/enrolment` like the first admin. Other environments refuse invitations until an email provider is chosen
 - Migrations: `cargo run -p api -- migrate` (also run on start unless `API_MIGRATE_ON_START=false`); add one as `apps/api/migrations/<YYYYMMDDHHMMSS>_<name>.sql`
 - Contract: after changing a route or schema, regenerate packages/api-contract (see the api-contract block); `cargo test -p api` fails while it is stale
 

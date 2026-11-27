@@ -1,0 +1,24 @@
+meta {
+  name: List
+  type: http
+  seq: 1
+}
+
+docs {
+  Every staff account with its roles and status. Needs staff.view. Sign in first
+  (staff-auth folder) so staffSessionToken is set.
+}
+
+get {
+  url: {{baseUrl}}/staff
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{staffSessionToken}}
+}
+
+assert {
+  res.status: eq 200
+}

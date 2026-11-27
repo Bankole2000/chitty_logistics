@@ -3,8 +3,6 @@
 //! database: every test runs in its own throwaway database with the migrations applied
 //! (#[sqlx::test]); Postgres from docker-compose.yml (DATABASE_URL via .cargo/config.toml).
 
-use std::sync::Arc;
-
 use api::{
     auth::{Permission, admin, secrets},
     config::Config,
@@ -34,10 +32,7 @@ fn config() -> Config {
 }
 
 fn app(db: &PgPool) -> Router {
-    api::router(AppState {
-        db: db.clone(),
-        config: Arc::new(config()),
-    })
+    api::router(AppState::new(db.clone(), config()))
 }
 
 struct Res {

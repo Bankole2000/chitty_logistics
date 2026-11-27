@@ -39,12 +39,20 @@ pub const GENERATE_COMMAND: &str =
         crate::auth::sign_in::verify,
         crate::auth::sign_in::sign_out,
         crate::auth::sign_in::me,
+        crate::staff::list,
+        crate::staff::show,
+        crate::staff::create,
+        crate::staff::reissue_invitation,
+        crate::staff::edit_role,
+        crate::staff::archive,
+        crate::staff::restore,
     ),
     components(schemas(ErrorBody, ErrorDetail, Health)),
     modifiers(&StaffSessionScheme),
     tags(
         (name = "health", description = "Liveness of the api and its database"),
         (name = "staff-auth", description = "Staff sign-in with email, password and an authenticator code; sessions and sign-out"),
+        (name = "staff", description = "Staff accounts: invite with a role, change roles, archive and restore (admins)"),
     ),
 )]
 pub struct ApiDoc;

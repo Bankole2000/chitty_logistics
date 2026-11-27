@@ -2,8 +2,6 @@
 //! Tests marked "database" need Postgres from docker-compose.yml (or DATABASE_URL, which
 //! defaults to it through .cargo/config.toml).
 
-use std::sync::Arc;
-
 use api::{config::Config, state::AppState};
 use axum::{
     Router,
@@ -27,10 +25,7 @@ fn config(database_url: Option<&str>) -> Config {
 
 fn app_with(config: Config) -> Router {
     let db = api::pool(&config).unwrap();
-    api::router(AppState {
-        db,
-        config: Arc::new(config),
-    })
+    api::router(AppState::new(db, config))
 }
 
 /// A router whose database can never be reached (nothing listens on port 1).

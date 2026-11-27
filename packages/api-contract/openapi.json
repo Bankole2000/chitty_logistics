@@ -56,13 +56,145 @@
         }
       }
     },
+    "/staff": {
+      "get": {
+        "tags": [
+          "staff"
+        ],
+        "summary": "List staff accounts with their roles and status",
+        "description": "Every staff account, archived ones included, ordered by name. Not paginated: a staff list stays in the tens. Needs `staff.view`.",
+        "operationId": "staff_list",
+        "responses": {
+          "200": {
+            "description": "The staff accounts.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthenticated`: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`forbidden`: lacks `staff.view`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "staff_session": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "staff"
+        ],
+        "summary": "Invite a staff member with a role",
+        "description": "Creates an `invited` account with the role and a single-use invitation valid for `STAFF_INVITE_TTL_HOURS` (default 168, 7 days), delivered by the configured sender. The response never contains the invitation token. The invited person accepts with `POST /staff/enrolment` (the token and a new password) and `POST /staff/sign-in/verify` (the first code), which makes the account `active`. Where no email provider is configured (every environment but development, for now) nothing is created and the answer is 503 `invitation_delivery_unavailable`. Needs `staff.create`.",
+        "operationId": "staff_create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateStaffRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Invited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffMember"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthenticated`: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`forbidden`: lacks `staff.create`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`email_taken`: a staff member with this email exists (archived ones included).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`invalid_request`: bad email, name, role or reason (`details.fields`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`invitation_delivery_unavailable` or `invitation_delivery_failed`: the invitation could not be sent; nothing was created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "staff_session": []
+          }
+        ]
+      }
+    },
     "/staff/enrolment": {
       "post": {
         "tags": [
           "staff-auth"
         ],
         "summary": "Set a password and get a new authenticator secret",
-        "description": "With the one-time enrolment token from `api create-admin`, sets the staff member's password and returns a new TOTP secret and otpauth URI (shown once) with a challenge. Complete enrolment with `POST /staff/sign-in/verify` and the first code. The token stays usable until enrolment completes or it expires; using it again replaces the secret. Needs no authentication.",
+        "description": "With the one-time enrolment token from `api create-admin` or a staff invitation (`POST /staff`), sets the staff member's password and returns a new TOTP secret and otpauth URI (shown once) with a challenge. Complete enrolment with `POST /staff/sign-in/verify` and the first code. The token stays usable until enrolment completes or it expires; using it again replaces the secret. Needs no authentication.",
         "operationId": "staff_enrolment",
         "requestBody": {
           "content": {
@@ -307,6 +439,459 @@
           }
         ]
       }
+    },
+    "/staff/{id}": {
+      "get": {
+        "tags": [
+          "staff"
+        ],
+        "summary": "One staff account with its roles and status",
+        "description": "Needs `staff.view`.",
+        "operationId": "staff_get",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The staff account's id.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The staff account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffMember"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthenticated`: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`forbidden`: lacks `staff.view`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found`: no such staff account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "staff_session": []
+          }
+        ]
+      },
+      "patch": {
+        "tags": [
+          "staff"
+        ],
+        "summary": "Change a staff member's role",
+        "description": "Replaces the account's roles with `role`. Takes effect on the person's next request (permissions are read per request); their sessions stay open. Setting the role they already have changes nothing and writes no audit entry. Refused with `last_admin` when it would leave no active staff member able to manage roles (`staff.edit_role`). Needs `staff.edit_role`.",
+        "operationId": "staff_edit_role",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The staff account's id.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditRoleRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "The account with its new role.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffMember"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthenticated`: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`forbidden`: lacks `staff.edit_role`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found`: no such staff account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`last_admin`: the last active staff member able to manage roles would lose that permission.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`invalid_request`: unknown role or bad reason (`details.fields`).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "staff_session": []
+          }
+        ]
+      }
+    },
+    "/staff/{id}/archive": {
+      "post": {
+        "tags": [
+          "staff"
+        ],
+        "summary": "Archive a staff member who has left",
+        "description": "Revokes every session of the person at once and ends any unused invitation; they cannot sign in or enrol until restored. Their past audit entries stay. Staff cannot archive themselves (`cannot_archive_self`), and the last active staff member able to manage roles cannot be archived (`last_admin`). Needs `staff.archive`.",
+        "operationId": "staff_archive",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The staff account's id.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Archived.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffMember"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthenticated`: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`forbidden`: lacks `staff.archive`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found`: no such staff account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`cannot_archive_self`, `last_admin`, or `already_archived`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`invalid_request`: the reason is missing or too long.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "staff_session": []
+          }
+        ]
+      }
+    },
+    "/staff/{id}/invitation": {
+      "post": {
+        "tags": [
+          "staff"
+        ],
+        "summary": "Send a new invitation to an invited staff member",
+        "description": "For an `invited` account whose invitation expired or was lost: sends a new one, valid for `STAFF_INVITE_TTL_HOURS`; earlier invitations stop working. The response never contains the token. Needs `staff.create`.",
+        "operationId": "staff_reissue_invitation",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The staff account's id.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A new invitation was sent.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffMember"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthenticated`: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`forbidden`: lacks `staff.create`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found`: no such staff account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`not_invited`: the account is active or archived.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "`invitation_delivery_unavailable` or `invitation_delivery_failed`: nothing was changed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "staff_session": []
+          }
+        ]
+      }
+    },
+    "/staff/{id}/restore": {
+      "post": {
+        "tags": [
+          "staff"
+        ],
+        "summary": "Restore an archived staff member",
+        "description": "A person who had finished enrolment becomes `active` again and signs in with their existing password and authenticator; sessions revoked by archiving stay revoked. A person who had not finished enrolment becomes `invited` and needs a new invitation (`POST /staff/{id}/invitation`). Needs `staff.restore`.",
+        "operationId": "staff_restore",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "description": "The staff account's id.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Restored.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StaffMember"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthenticated`: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`forbidden`: lacks `staff.restore`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "`not_found`: no such staff account.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "`not_archived`: the account is not archived.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`invalid_request`: the reason is missing or too long.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "staff_session": []
+          }
+        ]
+      }
     }
   },
   "components": {
@@ -328,6 +913,56 @@
           }
         }
       },
+      "CreateStaffRequest": {
+        "type": "object",
+        "required": [
+          "email",
+          "name",
+          "role"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "agent@example.com"
+          },
+          "name": {
+            "type": "string",
+            "example": "Ada Obi"
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why, recorded in the audit entry. Optional."
+          },
+          "role": {
+            "type": "string",
+            "description": "Role key, e.g. `operations`, `admin`, `finance`, `hr`.",
+            "example": "operations"
+          }
+        }
+      },
+      "EditRoleRequest": {
+        "type": "object",
+        "required": [
+          "role"
+        ],
+        "properties": {
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Why, recorded in the audit entry. Optional."
+          },
+          "role": {
+            "type": "string",
+            "description": "The new role key; replaces the account's current roles.",
+            "example": "finance"
+          }
+        }
+      },
       "EnrolRequest": {
         "type": "object",
         "required": [
@@ -342,7 +977,7 @@
           },
           "token": {
             "type": "string",
-            "description": "The one-time enrolment token printed by `api create-admin`."
+            "description": "The one-time enrolment token printed by `api create-admin` or sent in a staff\ninvitation."
           }
         }
       },
@@ -493,6 +1128,19 @@
           }
         }
       },
+      "ReasonRequest": {
+        "type": "object",
+        "required": [
+          "reason"
+        ],
+        "properties": {
+          "reason": {
+            "type": "string",
+            "description": "Why, recorded in the audit entry. Required, at most 1000 characters.",
+            "example": "Left the company on 2026-11-30"
+          }
+        }
+      },
       "SessionResponse": {
         "type": "object",
         "required": [
@@ -534,6 +1182,80 @@
           "password": {
             "type": "string",
             "format": "password"
+          }
+        }
+      },
+      "StaffList": {
+        "type": "object",
+        "required": [
+          "staff"
+        ],
+        "properties": {
+          "staff": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StaffMember"
+            },
+            "description": "Every staff account, archived ones included, by name."
+          }
+        }
+      },
+      "StaffMember": {
+        "type": "object",
+        "description": "A staff account as admins see it. Never contains a password, secret or token.",
+        "required": [
+          "id",
+          "email",
+          "name",
+          "status",
+          "roles",
+          "created_at"
+        ],
+        "properties": {
+          "archived_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the account was archived; null unless `archived`."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "email": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "invitation_expires_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "description": "When the newest unused invitation of an `invited` account expires; null otherwise or\nwhen every invitation has expired (reissue one with `POST /staff/{id}/invitation`)."
+          },
+          "name": {
+            "type": "string"
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Role keys, e.g. `operations`.",
+            "example": [
+              "operations"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "description": "`invited`, `active` or `archived`.",
+            "example": "active"
           }
         }
       },
@@ -610,6 +1332,10 @@
     {
       "name": "staff-auth",
       "description": "Staff sign-in with email, password and an authenticator code; sessions and sign-out"
+    },
+    {
+      "name": "staff",
+      "description": "Staff accounts: invite with a role, change roles, archive and restore (admins)"
     }
   ]
 }
