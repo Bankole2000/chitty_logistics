@@ -12,7 +12,7 @@
   "servers": [
     {
       "url": "http://127.0.0.1:18081",
-      "description": "Local development (deliberately stale)"
+      "description": "Local development"
     }
   ],
   "paths": {
