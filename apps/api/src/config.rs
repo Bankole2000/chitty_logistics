@@ -6,8 +6,9 @@ use base64::Engine;
 
 #[derive(Debug, Clone)]
 pub struct Config {
-    /// `API_ENV`: where the api runs. Only `development` may fall back to development-only
-    /// defaults for secrets.
+    /// `API_ENV`: where the api runs. Defaults to `production`, so a deployment that forgets
+    /// to set it fails closed; only `development` may fall back to development-only defaults
+    /// for secrets. Local cargo commands get `development` from `.cargo/config.toml`.
     pub env: AppEnv,
     /// `API_BIND`: address the server listens on.
     pub bind: SocketAddr,
@@ -115,7 +116,7 @@ impl Config {
             }
         };
 
-        let env = match var("API_ENV", "development").trim() {
+        let env = match var("API_ENV", "production").trim() {
             "development" => AppEnv::Development,
             "test" => AppEnv::Test,
             "staging" => AppEnv::Staging,
@@ -240,9 +241,20 @@ fn parse_key(value: &str) -> Result<SecretKey, String> {
 mod tests {
     use super::*;
 
+    /// Looks up test values, with `API_ENV=development` unless the test sets it.
+    fn cfg(get: impl Fn(&str) -> Option<String>) -> Result<Config, ConfigError> {
+        Config::from_lookup(|n| get(n).or_else(|| (n == "API_ENV").then(|| "development".into())))
+    }
+
+    #[test]
+    fn api_env_defaults_to_production_and_then_requires_a_totp_key() {
+        let e = Config::from_lookup(|_| None).unwrap_err();
+        assert_eq!(e.name, "TOTP_ENCRYPTION_KEY");
+    }
+
     #[test]
     fn defaults_apply_when_nothing_is_set() {
-        let c = Config::from_lookup(|_| None).unwrap();
+        let c = cfg(|_| None).unwrap();
         assert_eq!(c.env, AppEnv::Development);
         assert_eq!(c.bind.to_string(), DEFAULT_BIND);
         assert_eq!(c.cors_origins, vec![DEFAULT_CORS_ORIGINS.to_string()]);
@@ -261,27 +273,26 @@ mod tests {
 
     #[test]
     fn cors_origins_are_split_and_trimmed() {
-        let c = Config::from_lookup(|n| {
-            (n == "API_CORS_ORIGINS").then(|| " http://a.test , http://b.test,".into())
-        })
-        .unwrap();
+        let c =
+            cfg(|n| (n == "API_CORS_ORIGINS").then(|| " http://a.test , http://b.test,".into()))
+                .unwrap();
         assert_eq!(c.cors_origins, vec!["http://a.test", "http://b.test"]);
     }
 
     #[test]
     fn invalid_values_name_the_variable() {
-        let e = Config::from_lookup(|n| (n == "API_BIND").then(|| "nope".into())).unwrap_err();
+        let e = cfg(|n| (n == "API_BIND").then(|| "nope".into())).unwrap_err();
         assert_eq!(e.name, "API_BIND");
     }
 
     #[test]
     fn outside_development_a_totp_key_is_required() {
         for env in ["test", "staging", "production"] {
-            let e = Config::from_lookup(|n| (n == "API_ENV").then(|| env.into())).unwrap_err();
+            let e = cfg(|n| (n == "API_ENV").then(|| env.into())).unwrap_err();
             assert_eq!(e.name, "TOTP_ENCRYPTION_KEY");
         }
         let key = base64::engine::general_purpose::STANDARD.encode([7u8; 32]);
-        let c = Config::from_lookup(|n| match n {
+        let c = cfg(|n| match n {
             "API_ENV" => Some("production".into()),
             "TOTP_ENCRYPTION_KEY" => Some(key.clone()),
             _ => None,
@@ -294,18 +305,16 @@ mod tests {
     #[test]
     fn a_malformed_key_is_refused_without_echoing_it() {
         let short = base64::engine::general_purpose::STANDARD.encode([1u8; 16]);
-        let e = Config::from_lookup(|n| (n == "TOTP_ENCRYPTION_KEY").then(|| short.clone()))
-            .unwrap_err();
+        let e = cfg(|n| (n == "TOTP_ENCRYPTION_KEY").then(|| short.clone())).unwrap_err();
         assert_eq!(e.name, "TOTP_ENCRYPTION_KEY");
         assert!(!e.to_string().contains(&short));
-        let e = Config::from_lookup(|n| (n == "TOTP_ENCRYPTION_KEY").then(|| "not base64!".into()))
-            .unwrap_err();
+        let e = cfg(|n| (n == "TOTP_ENCRYPTION_KEY").then(|| "not base64!".into())).unwrap_err();
         assert!(!e.to_string().contains("not base64!"));
     }
 
     #[test]
     fn the_key_is_never_printed() {
-        let c = Config::from_lookup(|_| None).unwrap();
+        let c = cfg(|_| None).unwrap();
         let printed = format!("{c:?}");
         assert!(printed.contains("[redacted]"));
         assert!(!printed.contains("chitty-dev-only"));
@@ -314,8 +323,7 @@ mod tests {
 
     #[test]
     fn zero_limits_are_refused() {
-        let e = Config::from_lookup(|n| (n == "STAFF_SIGNIN_MAX_ATTEMPTS").then(|| "0".into()))
-            .unwrap_err();
+        let e = cfg(|n| (n == "STAFF_SIGNIN_MAX_ATTEMPTS").then(|| "0".into())).unwrap_err();
         assert_eq!(e.name, "STAFF_SIGNIN_MAX_ATTEMPTS");
     }
 }

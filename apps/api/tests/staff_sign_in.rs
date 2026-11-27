@@ -27,6 +27,7 @@ const IP: &str = "203.0.113.7";
 fn config() -> Config {
     Config::from_lookup(|name| match name {
         "API_CLIENT_IP_HEADER" => Some("x-test-client-ip".into()),
+        "API_ENV" => Some("development".into()),
         _ => None,
     })
     .unwrap()
