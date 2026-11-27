@@ -23,7 +23,7 @@ One row per deployable app in `apps/`, per shared package in `packages/`, and fo
 
 ## Local development
 Defaults that avoid the usual clashes on a developer machine; change them only with a reason.
-- **Ports:** uncommon ones, so the apps don't collide with other local tools (3000, 5173, 8000 and 8080 are often taken): api 18080, Postgres 15432; client ports are chosen when each client is created. Record each app's port in its `.env.example`.
+- **Ports:** uncommon ones, so the apps don't collide with other local tools (3000, 5173, 8000 and 8080 are often taken): api 18081, Postgres 15481 (chosen to stay clear of other projects and their Postgres containers); client ports are chosen when each client is created. Record each app's port in its `.env.example`.
 - **Host:** use `127.0.0.1`, not `localhost`, in URLs and bind addresses. `localhost` can resolve to IPv6 first, which adds a delay to every database connection on some systems and makes some dev servers listen on IPv6 only.
 - **Databases and other services** run in `docker-compose.yml` (committed) with trust authentication on `127.0.0.1` for local use and CI only, so no password sits in the repository. Each developer's extra services (caches, queues, other databases) go in a gitignored `docker-compose.override.yml`, which Compose loads automatically; commented-out services there cost nothing until needed. Turn off automatic restarts for local containers.
 - **CORS:** each server reads the allowed client origins from configuration (e.g. `API_CORS_ORIGINS`), with defaults for every local client: the web dev server and the desktop and mobile shells.
