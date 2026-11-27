@@ -1,6 +1,7 @@
 # Technical Specification
 
 Status: Draft | Owner: @bankole2000 | Version: 0.5 | Last updated: 2026-11-27
+<!-- review:focus "src/staff (staff accounts)", API-STAFF-07, API-STAFF-09, API-STAFF-10, API-STAFF-11 -->
 References: FEATURES.md, PRD.md, DESIGN.md
 
 ## Architecture overview

@@ -1,6 +1,7 @@
 # Product Requirements Document
 
 Status: Draft | Owner: @bankole2000 | Version: 0.4 | Last updated: 2026-11-27
+<!-- review:focus "Email provider for staff invitations" -->
 References: FEATURES.md (users U-, resources R-, surfaces S-, journeys J-, features FT-)
 
 FEATURES.md feeds this document. When features are approved or changed there, the requirements below are updated to match, and each requirement lists the features it covers.
