@@ -84,3 +84,6 @@ Thumbs.db
 
 # Rust build output
 target/
+
+# Task and review worktrees made by scripts/agent (docs/GITHUB.md, Agent workflow)
+.worktrees/

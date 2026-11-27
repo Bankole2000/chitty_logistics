@@ -118,9 +118,20 @@ jobs:
       - name: Every path and method in the spec has a Bruno request
         run: cargo test -p api --test contract
 
+  # Repository-wide checks: cheap, so they run on every PR. ubuntu-latest ships Node.
+  repo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - name: Agent workflow scripts
+        run: node --test scripts/test/*.test.mjs
+      - name: Check features (FEATURES.md references, PRD links, generated parts)
+        run: node scripts/check-features.mjs
+
   ci-ok:
     if: always()
-    needs: [changes, api, api-contract]
+    needs: [changes, repo, api, api-contract]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
