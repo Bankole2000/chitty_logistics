@@ -24,6 +24,7 @@ tower = "0.5.3"
 tower-http = { version = "0.7.1", features = ["cors", "trace", "request-id", "util"] }
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter", "json"] }
+utoipa = { version = "6.0.0", features = ["chrono", "uuid"] }
 uuid = { version = "1.29.3", features = ["serde", "v4"] }
 
 [dev-dependencies]

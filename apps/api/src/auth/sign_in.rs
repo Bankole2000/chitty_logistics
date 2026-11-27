@@ -26,6 +26,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use sqlx::PgPool;
+use utoipa::ToSchema;
 use uuid::Uuid;
 
 use super::{
@@ -36,7 +37,7 @@ use super::{
 };
 use crate::{
     audit::{self, AuditEntry},
-    error::ApiError,
+    error::{ApiError, ErrorBody},
     request_id::REQUEST_ID_HEADER,
     state::AppState,
 };
@@ -53,28 +54,36 @@ pub fn routes() -> Router<AppState> {
 // --- Requests and responses ---
 
 // No Debug: holds a secret.
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct EnrolRequest {
+    /// The one-time enrolment token printed by `api create-admin`.
     pub token: String,
+    /// The new password: at least `STAFF_PASSWORD_MIN_LENGTH` characters (default 12).
+    #[schema(format = Password)]
     pub password: String,
 }
 
 // No Debug: holds a secret.
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct SignInRequest {
+    #[schema(example = "admin@example.com")]
     pub email: String,
+    #[schema(format = Password)]
     pub password: String,
 }
 
 // No Debug: holds a secret.
-#[derive(Deserialize)]
+#[derive(Deserialize, ToSchema)]
 pub struct VerifyRequest {
+    /// From `POST /staff/sign-in` or `POST /staff/enrolment`.
     pub challenge: String,
+    /// The 6-digit code the authenticator app shows now.
+    #[schema(example = "123456")]
     pub code: String,
 }
 
 // No Debug: holds a secret.
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct ChallengeResponse {
     /// Sent back with the code to `POST /staff/sign-in/verify`.
     pub challenge: String,
@@ -82,8 +91,9 @@ pub struct ChallengeResponse {
 }
 
 // No Debug: holds a secret.
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct EnrolResponse {
+    /// Sent back with the first code to `POST /staff/sign-in/verify`.
     pub challenge: String,
     pub expires_at: DateTime<Utc>,
     pub totp: TotpSetup,
@@ -91,35 +101,47 @@ pub struct EnrolResponse {
 
 /// What an authenticator app needs. Returned once; the server keeps only an encrypted copy.
 // No Debug: holds a secret.
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct TotpSetup {
     /// Base32, for typing into an authenticator app.
     pub secret: String,
     /// `otpauth://totp/…`, for a QR code.
     pub otpauth_uri: String,
+    #[schema(example = "SHA1")]
     pub algorithm: &'static str,
+    #[schema(example = 6)]
     pub digits: u8,
+    /// Seconds each code lasts.
+    #[schema(example = 30)]
     pub period: u64,
 }
 
 // No Debug: holds a secret.
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct SessionResponse {
     /// Send as `Authorization: Bearer <token>`. Returned once.
     pub token: String,
+    #[schema(example = "Bearer")]
     pub token_type: &'static str,
     /// When the session ends if unused; each use moves it forward.
     pub expires_at: DateTime<Utc>,
     pub staff: Me,
 }
 
-#[derive(Debug, Serialize)]
+/// The signed-in staff member.
+#[derive(Debug, Serialize, ToSchema)]
 pub struct Me {
     pub id: Uuid,
     pub email: String,
     pub name: String,
+    /// `active` (only active staff can be signed in).
+    #[schema(example = "active")]
     pub status: String,
+    /// Role keys, e.g. `admin`, `operations`.
+    #[schema(example = json!(["admin"]))]
     pub roles: Vec<String>,
+    /// Permission keys the roles give, e.g. `driver.approve`.
+    #[schema(example = json!(["driver.view", "driver.approve"]))]
     pub permissions: Vec<&'static str>,
 }
 
@@ -290,7 +312,21 @@ async fn blocking<T: Send + 'static>(
 // --- Handlers ---
 
 /// `POST /staff/enrolment`
-async fn enrol(
+#[utoipa::path(
+    post,
+    path = "/staff/enrolment",
+    tag = "staff-auth",
+    operation_id = "staff_enrolment",
+    summary = "Set a password and get a new authenticator secret",
+    description = "With the one-time enrolment token from `api create-admin`, sets the staff member's password and returns a new TOTP secret and otpauth URI (shown once) with a challenge. Complete enrolment with `POST /staff/sign-in/verify` and the first code. The token stays usable until enrolment completes or it expires; using it again replaces the secret. Needs no authentication.",
+    request_body = EnrolRequest,
+    responses(
+        (status = 200, description = "Password set; the authenticator secret, shown once.", body = EnrolResponse),
+        (status = 401, description = "`invalid_enrolment_token`: unknown, expired or used.", body = ErrorBody),
+        (status = 422, description = "`invalid_request`: the password is too short or too long.", body = ErrorBody),
+    )
+)]
+pub async fn enrol(
     State(state): State<AppState>,
     headers: HeaderMap,
     Json(body): Json<EnrolRequest>,
@@ -393,7 +429,22 @@ async fn enrol(
 }
 
 /// `POST /staff/sign-in`
-async fn sign_in(
+#[utoipa::path(
+    post,
+    path = "/staff/sign-in",
+    tag = "staff-auth",
+    operation_id = "staff_sign_in",
+    summary = "First step of staff sign-in: email and password",
+    description = "Returns a short-lived challenge to complete with a code at `POST /staff/sign-in/verify`. A wrong email and a wrong password give the same `invalid_credentials` error. Failed attempts are limited per account and per IP address (`STAFF_SIGNIN_MAX_ATTEMPTS` per `STAFF_SIGNIN_WINDOW_MINUTES`). Needs no authentication.",
+    request_body = SignInRequest,
+    responses(
+        (status = 200, description = "Password accepted; enter a code next.", body = ChallengeResponse),
+        (status = 401, description = "`invalid_credentials`: wrong email or password, or the account cannot sign in.", body = ErrorBody),
+        (status = 403, description = "`totp_enrolment_required`: the password is right but enrolment was not completed.", body = ErrorBody),
+        (status = 429, description = "`rate_limited`: too many failed attempts; see the `Retry-After` header.", body = ErrorBody, headers(("Retry-After" = u64, description = "Seconds until another attempt is allowed."))),
+    )
+)]
+pub async fn sign_in(
     State(state): State<AppState>,
     headers: HeaderMap,
     ClientIp(ip): ClientIp,
@@ -450,7 +501,21 @@ async fn sign_in(
 }
 
 /// `POST /staff/sign-in/verify`
-async fn verify(
+#[utoipa::path(
+    post,
+    path = "/staff/sign-in/verify",
+    tag = "staff-auth",
+    operation_id = "staff_sign_in_verify",
+    summary = "Second step of staff sign-in: the authenticator code",
+    description = "Completes a challenge (from sign-in or enrolment) with the current 6-digit TOTP code and returns a session token, once. Send it as `Authorization: Bearer <token>`. Each code is accepted once; each challenge completes once. Wrong codes count towards the sign-in limit. Needs no authentication.",
+    request_body = VerifyRequest,
+    responses(
+        (status = 200, description = "Signed in.", body = SessionResponse),
+        (status = 401, description = "`invalid_code`: wrong, old or already used code. `challenge_expired`: the challenge is unknown, expired or already completed. `invalid_enrolment_token`: the enrolment token expired meanwhile.", body = ErrorBody),
+        (status = 429, description = "`rate_limited`: too many failed attempts; see the `Retry-After` header.", body = ErrorBody, headers(("Retry-After" = u64, description = "Seconds until another attempt is allowed."))),
+    )
+)]
+pub async fn verify(
     State(state): State<AppState>,
     headers: HeaderMap,
     ClientIp(ip): ClientIp,
@@ -624,7 +689,20 @@ async fn verify(
 }
 
 /// `POST /staff/sign-out`: any signed-in staff member may end their own session.
-async fn sign_out(
+#[utoipa::path(
+    post,
+    path = "/staff/sign-out",
+    tag = "staff-auth",
+    operation_id = "staff_sign_out",
+    summary = "End the current staff session",
+    description = "Revokes the session whose token the request carries; the token is refused from then on. Other sessions of the same staff member are not affected.",
+    security(("staff_session" = [])),
+    responses(
+        (status = 204, description = "Signed out."),
+        (status = 401, description = "`unauthenticated`: no valid session.", body = ErrorBody),
+    )
+)]
+pub async fn sign_out(
     State(state): State<AppState>,
     staff: StaffIdentity,
     Extension(current): Extension<CurrentSession>,
@@ -656,7 +734,19 @@ async fn sign_out(
 }
 
 /// `GET /staff/me`: any signed-in staff member may see their own account.
-async fn me(State(state): State<AppState>, staff: StaffIdentity) -> Result<Json<Me>, ApiError> {
+#[utoipa::path(
+    get,
+    path = "/staff/me",
+    tag = "staff-auth",
+    operation_id = "staff_me",
+    summary = "The signed-in staff member, their roles and permissions",
+    security(("staff_session" = [])),
+    responses(
+        (status = 200, description = "The signed-in staff member.", body = Me),
+        (status = 401, description = "`unauthenticated`: no valid session.", body = ErrorBody),
+    )
+)]
+pub async fn me(State(state): State<AppState>, staff: StaffIdentity) -> Result<Json<Me>, ApiError> {
     Ok(Json(load_me(&state.db, &staff).await?))
 }
 

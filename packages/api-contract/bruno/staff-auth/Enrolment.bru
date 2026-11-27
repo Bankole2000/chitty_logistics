@@ -1,0 +1,35 @@
+meta {
+  name: Enrolment
+  type: http
+  seq: 1
+}
+
+docs {
+  First-time set-up with the one-time token printed by `api create-admin`. Set
+  STAFF_ENROLMENT_TOKEN and STAFF_PASSWORD in your environment (never in this collection),
+  add the returned totp.secret to an authenticator app, then run "Sign-in verify" with the
+  first code.
+}
+
+post {
+  url: {{baseUrl}}/staff/enrolment
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "token": "{{process.env.STAFF_ENROLMENT_TOKEN}}",
+    "password": "{{process.env.STAFF_PASSWORD}}"
+  }
+}
+
+script:post-response {
+  if (res.status === 200) {
+    bru.setVar("staffChallenge", res.body.challenge);
+  }
+}
+
+assert {
+  res.status: eq 200
+}

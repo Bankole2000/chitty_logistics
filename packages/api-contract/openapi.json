@@ -1,0 +1,615 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Chitty Logistics api",
+    "description": "The one server every Chitty Logistics client calls. Every error response has the `ErrorBody` shape (docs/TECHNICAL.md, Error responses).",
+    "license": {
+      "name": "MIT",
+      "identifier": "MIT"
+    },
+    "version": "0.1.0"
+  },
+  "servers": [
+    {
+      "url": "http://127.0.0.1:18081",
+      "description": "Local development"
+    }
+  ],
+  "paths": {
+    "/health": {
+      "get": {
+        "tags": [
+          "health"
+        ],
+        "summary": "Check the api and its database",
+        "description": "Returns 200 when the api and its database answer, and 503 when the database does not. Needs no authentication.",
+        "operationId": "health",
+        "responses": {
+          "200": {
+            "description": "The api and its database answer.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                },
+                "example": {
+                  "database": "ok",
+                  "status": "ok"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "The api answers but its database does not.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                },
+                "example": {
+                  "database": "unavailable",
+                  "status": "degraded"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/staff/enrolment": {
+      "post": {
+        "tags": [
+          "staff-auth"
+        ],
+        "summary": "Set a password and get a new authenticator secret",
+        "description": "With the one-time enrolment token from `api create-admin`, sets the staff member's password and returns a new TOTP secret and otpauth URI (shown once) with a challenge. Complete enrolment with `POST /staff/sign-in/verify` and the first code. The token stays usable until enrolment completes or it expires; using it again replaces the secret. Needs no authentication.",
+        "operationId": "staff_enrolment",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EnrolRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Password set; the authenticator secret, shown once.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnrolResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`invalid_enrolment_token`: unknown, expired or used.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "`invalid_request`: the password is too short or too long.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/staff/me": {
+      "get": {
+        "tags": [
+          "staff-auth"
+        ],
+        "summary": "The signed-in staff member, their roles and permissions",
+        "operationId": "staff_me",
+        "responses": {
+          "200": {
+            "description": "The signed-in staff member.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`unauthenticated`: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "staff_session": []
+          }
+        ]
+      }
+    },
+    "/staff/sign-in": {
+      "post": {
+        "tags": [
+          "staff-auth"
+        ],
+        "summary": "First step of staff sign-in: email and password",
+        "description": "Returns a short-lived challenge to complete with a code at `POST /staff/sign-in/verify`. A wrong email and a wrong password give the same `invalid_credentials` error. Failed attempts are limited per account and per IP address (`STAFF_SIGNIN_MAX_ATTEMPTS` per `STAFF_SIGNIN_WINDOW_MINUTES`). Needs no authentication.",
+        "operationId": "staff_sign_in",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignInRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Password accepted; enter a code next.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChallengeResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`invalid_credentials`: wrong email or password, or the account cannot sign in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`totp_enrolment_required`: the password is right but enrolment was not completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "`rate_limited`: too many failed attempts; see the `Retry-After` header.",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int64",
+                  "minimum": 0
+                },
+                "description": "Seconds until another attempt is allowed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/staff/sign-in/verify": {
+      "post": {
+        "tags": [
+          "staff-auth"
+        ],
+        "summary": "Second step of staff sign-in: the authenticator code",
+        "description": "Completes a challenge (from sign-in or enrolment) with the current 6-digit TOTP code and returns a session token, once. Send it as `Authorization: Bearer <token>`. Each code is accepted once; each challenge completes once. Wrong codes count towards the sign-in limit. Needs no authentication.",
+        "operationId": "staff_sign_in_verify",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Signed in.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "`invalid_code`: wrong, old or already used code. `challenge_expired`: the challenge is unknown, expired or already completed. `invalid_enrolment_token`: the enrolment token expired meanwhile.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "`rate_limited`: too many failed attempts; see the `Retry-After` header.",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "format": "int64",
+                  "minimum": 0
+                },
+                "description": "Seconds until another attempt is allowed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/staff/sign-out": {
+      "post": {
+        "tags": [
+          "staff-auth"
+        ],
+        "summary": "End the current staff session",
+        "description": "Revokes the session whose token the request carries; the token is refused from then on. Other sessions of the same staff member are not affected.",
+        "operationId": "staff_sign_out",
+        "responses": {
+          "204": {
+            "description": "Signed out."
+          },
+          "401": {
+            "description": "`unauthenticated`: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "staff_session": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ChallengeResponse": {
+        "type": "object",
+        "required": [
+          "challenge",
+          "expires_at"
+        ],
+        "properties": {
+          "challenge": {
+            "type": "string",
+            "description": "Sent back with the code to `POST /staff/sign-in/verify`."
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "EnrolRequest": {
+        "type": "object",
+        "required": [
+          "token",
+          "password"
+        ],
+        "properties": {
+          "password": {
+            "type": "string",
+            "format": "password",
+            "description": "The new password: at least `STAFF_PASSWORD_MIN_LENGTH` characters (default 12)."
+          },
+          "token": {
+            "type": "string",
+            "description": "The one-time enrolment token printed by `api create-admin`."
+          }
+        }
+      },
+      "EnrolResponse": {
+        "type": "object",
+        "required": [
+          "challenge",
+          "expires_at",
+          "totp"
+        ],
+        "properties": {
+          "challenge": {
+            "type": "string",
+            "description": "Sent back with the first code to `POST /staff/sign-in/verify`."
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "totp": {
+            "$ref": "#/components/schemas/TotpSetup"
+          }
+        }
+      },
+      "ErrorBody": {
+        "type": "object",
+        "description": "The body of every error response (docs/TECHNICAL.md, Error responses).",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ErrorDetail"
+          }
+        },
+        "example": {
+          "error": {
+            "code": "not_found",
+            "details": null,
+            "message": "The requested resource was not found.",
+            "request_id": "6f1c2b9e-1d2a-4c3b-9e8f-0a1b2c3d4e5f"
+          }
+        }
+      },
+      "ErrorDetail": {
+        "type": "object",
+        "description": "What went wrong, in a form clients can branch on and show.",
+        "required": [
+          "code",
+          "message",
+          "request_id",
+          "details"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Stable snake_case identifier clients branch on, e.g. `not_found`, `forbidden`,\n`unauthenticated`, `invalid_request`, `rate_limited`, `internal`. New codes may be\nadded; existing ones never change meaning.",
+            "example": "not_found"
+          },
+          "details": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "description": "Code-specific data (e.g. which fields are invalid), or null."
+          },
+          "message": {
+            "type": "string",
+            "description": "Human-readable and safe to show; never contains internal details.",
+            "example": "The requested resource was not found."
+          },
+          "request_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The request's `x-request-id` (sent by the client or generated), also returned as a\nresponse header."
+          }
+        }
+      },
+      "Health": {
+        "type": "object",
+        "description": "Whether the api and its database answer.",
+        "required": [
+          "status",
+          "database"
+        ],
+        "properties": {
+          "database": {
+            "type": "string",
+            "description": "`ok`, or `unavailable` when the database does not answer.",
+            "example": "ok"
+          },
+          "status": {
+            "type": "string",
+            "description": "`ok` when everything answers, `degraded` when the database does not.",
+            "example": "ok"
+          }
+        }
+      },
+      "Me": {
+        "type": "object",
+        "description": "The signed-in staff member.",
+        "required": [
+          "id",
+          "email",
+          "name",
+          "status",
+          "roles",
+          "permissions"
+        ],
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "name": {
+            "type": "string"
+          },
+          "permissions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Permission keys the roles give, e.g. `driver.approve`.",
+            "example": [
+              "driver.view",
+              "driver.approve"
+            ]
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Role keys, e.g. `admin`, `operations`.",
+            "example": [
+              "admin"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "description": "`active` (only active staff can be signed in).",
+            "example": "active"
+          }
+        }
+      },
+      "SessionResponse": {
+        "type": "object",
+        "required": [
+          "token",
+          "token_type",
+          "expires_at",
+          "staff"
+        ],
+        "properties": {
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the session ends if unused; each use moves it forward."
+          },
+          "staff": {
+            "$ref": "#/components/schemas/Me"
+          },
+          "token": {
+            "type": "string",
+            "description": "Send as `Authorization: Bearer <token>`. Returned once."
+          },
+          "token_type": {
+            "type": "string",
+            "example": "Bearer"
+          }
+        }
+      },
+      "SignInRequest": {
+        "type": "object",
+        "required": [
+          "email",
+          "password"
+        ],
+        "properties": {
+          "email": {
+            "type": "string",
+            "example": "admin@example.com"
+          },
+          "password": {
+            "type": "string",
+            "format": "password"
+          }
+        }
+      },
+      "TotpSetup": {
+        "type": "object",
+        "description": "What an authenticator app needs. Returned once; the server keeps only an encrypted copy.",
+        "required": [
+          "secret",
+          "otpauth_uri",
+          "algorithm",
+          "digits",
+          "period"
+        ],
+        "properties": {
+          "algorithm": {
+            "type": "string",
+            "example": "SHA1"
+          },
+          "digits": {
+            "type": "integer",
+            "format": "int32",
+            "example": 6,
+            "minimum": 0
+          },
+          "otpauth_uri": {
+            "type": "string",
+            "description": "`otpauth://totp/…`, for a QR code."
+          },
+          "period": {
+            "type": "integer",
+            "format": "int64",
+            "description": "Seconds each code lasts.",
+            "example": 30,
+            "minimum": 0
+          },
+          "secret": {
+            "type": "string",
+            "description": "Base32, for typing into an authenticator app."
+          }
+        }
+      },
+      "VerifyRequest": {
+        "type": "object",
+        "required": [
+          "challenge",
+          "code"
+        ],
+        "properties": {
+          "challenge": {
+            "type": "string",
+            "description": "From `POST /staff/sign-in` or `POST /staff/enrolment`."
+          },
+          "code": {
+            "type": "string",
+            "description": "The 6-digit code the authenticator app shows now.",
+            "example": "123456"
+          }
+        }
+      }
+    },
+    "securitySchemes": {
+      "staff_session": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "Opaque staff session token from POST /staff/sign-in/verify."
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "health",
+      "description": "Liveness of the api and its database"
+    },
+    {
+      "name": "staff-auth",
+      "description": "Staff sign-in with email, password and an authenticator code; sessions and sign-out"
+    }
+  ]
+}

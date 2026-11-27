@@ -1,0 +1,19 @@
+meta {
+  name: Sign-out
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/staff/sign-out
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{staffSessionToken}}
+}
+
+assert {
+  res.status: eq 204
+}

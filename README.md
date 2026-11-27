@@ -131,6 +131,14 @@ Only the Rust apps exist so far; client commands are added with the first client
 - Build: `cargo build -p api --release`
 - First admin: `cargo run -p api -- create-admin --email <email> --name <name>` prints a one-time enrolment token (no default credentials exist); the admin sends it with a new password to `POST /staff/enrolment` and completes sign-in with a code from their authenticator app
 - Migrations: `cargo run -p api -- migrate` (also run on start unless `API_MIGRATE_ON_START=false`); add one as `apps/api/migrations/<YYYYMMDDHHMMSS>_<name>.sql`
+- Contract: after changing a route or schema, regenerate packages/api-contract (see the api-contract block); `cargo test -p api` fails while it is stale
+
+### api-contract
+The OpenAPI 3.1 spec and Bruno collection for the api, in packages/api-contract. Run from the repository root; none of these need the database.
+- Generate: `cargo run -p api -- openapi --out packages/api-contract/openapi.json` (writes the file itself; never redirect the output)
+- Check: `cargo run -p api -- openapi --check` (exits non-zero when the committed spec differs from the code); `cargo test -p api --test contract` also checks that every path and method in the spec has a Bruno request
+- Bruno collection: open `packages/api-contract/bruno/` in Bruno and pick the `local` environment (http://127.0.0.1:18081), or run it with the Bruno CLI: `cd packages/api-contract/bruno` then `npx @usebruno/cli run --env local` (with the api running)
+- Lint, typecheck, build: covered by the api block
 
 ### worker
 - Run locally: {{command}}
