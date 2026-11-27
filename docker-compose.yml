@@ -1,0 +1,25 @@
+# Local and CI services only (docs/TECHNICAL.md, Local development). Trust authentication on
+# 127.0.0.1: no password in the repository, and nothing reachable from other machines.
+# The project name and uncommon port keep these containers and volumes apart from other
+# projects' databases. Personal extra services go in a gitignored docker-compose.override.yml.
+name: chitty-logistics
+
+services:
+  postgres:
+    image: postgis/postgis:17-3.5
+    restart: "no"
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_DB: chitty
+    ports:
+      - "127.0.0.1:15481:5432"
+    volumes:
+      - chitty-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d chitty"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  chitty-postgres-data:
