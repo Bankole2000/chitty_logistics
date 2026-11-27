@@ -125,7 +125,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Agent workflow scripts
-        run: node --test scripts/test/
+        run: node --test scripts/test/*.test.mjs
       - name: Check features (FEATURES.md references, PRD links, generated parts)
         run: node scripts/check-features.mjs
 
