@@ -1,0 +1,56 @@
+# Keep the ecosystems you use; uncomment the others when their apps exist.
+#
+# Workspaces with ONE root lockfile (pnpm/npm/yarn workspaces, a Cargo workspace): use
+# directory "/". Apps with their OWN lockfiles: list them with "directories".
+#
+# The directories already point at this project's apps.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+
+  # JavaScript/TypeScript workspace with a single root lockfile (web clients, and
+  # React Native or Electron/Tauri front ends if chosen)
+  # - package-ecosystem: npm
+  #   directory: /
+  #   schedule:
+  #     interval: weekly
+  #   groups:
+  #     minor-and-patch:
+  #       update-types: [minor, patch]
+
+  # Rust servers (api, worker) in one Cargo workspace at the repo root
+  - package-ecosystem: cargo
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
+
+  # Native Android (Gradle) — mobile apps
+  # - package-ecosystem: gradle
+  #   directories:
+  #     - /apps/customer-mobile-app/android
+  #     - /apps/driver-mobile-app/android
+  #     - /apps/admin-app/android
+  #   schedule:
+  #     interval: weekly
+
+  # Native iOS (Swift Package Manager) — mobile apps. Dependabot does not
+  # support CocoaPods; update Podfile.lock manually or with a scheduled job.
+  # - package-ecosystem: swift
+  #   directories:
+  #     - /apps/customer-mobile-app/ios
+  #     - /apps/driver-mobile-app/ios
+  #     - /apps/admin-app/ios
+  #   schedule:
+  #     interval: weekly
+
+  # Flutter/Dart apps, if Flutter is chosen
+  # - package-ecosystem: pub
+  #   directories: ["/apps/customer-mobile-app", "/apps/driver-mobile-app", "/apps/admin-app"]
+  #   schedule:
+  #     interval: weekly

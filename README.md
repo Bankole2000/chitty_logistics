@@ -3,7 +3,7 @@
 Allows users to book instant or scheduled intra-city or inter-city safe and secure rides in Nigeria.
 
 ## Using this template (delete this section after setup)
-This repository was created from an idea-to-MVP starter kit for solo developers and teams of 2–5. It assumes a monorepo with one or more apps (e.g. web, API, mobile); a single-app project simply has one app. The kit does not provision GitHub configuration or deployment; the CI and Dependabot files are intentionally disabled (`.example`) until real commands are configured.
+This repository was created from an idea-to-MVP starter kit for solo developers and teams of 2–5. It assumes a monorepo with one or more apps (e.g. web, API, mobile); a single-app project simply has one app. The kit does not provision GitHub configuration or deployment; the CI and Dependabot files ship disabled (`.example`) until real commands are configured. Here, `.github/workflows/ci.yml` runs the api and api-contract checks and `.github/dependabot.yml` updates GitHub Actions and Cargo; the jobs for apps that don't exist yet stay in `ci.yml.example`.
 
 1. Fill in **Project setup** in the doc reviewer (see [Reviewing documents](#reviewing-documents)): name, repository, owners and apps.
 2. Draft `docs/FEATURES.md` first: the users, actions, resources and surfaces, then the features built from them, grouped into journeys. An agent can draft it from a short description of the idea; a human reviews it, adding features with the reviewer's "+ Add". The approved features feed every other document.
@@ -46,7 +46,7 @@ App, package and infra folders are created by M0 tasks, not shipped empty. The w
 - **Configuration:** anything in a web, mobile or desktop app's configuration ships to users and is public. Only server-side apps may hold secrets.
 - **Scripts:** run scripts as `bash scripts/<name>.sh`. This works on Windows (Git Bash), macOS and Linux without needing the executable bit, which Git on Windows does not set.
 - **Single sources of truth:** what the product does lives in `docs/FEATURES.md`; commands in [Commands](#commands) below; milestones in `docs/ROADMAP.md`; task status in the GitHub Project (or its labels).
-- **Checks:** `bash scripts/check-placeholders.sh` and `node scripts/check-features.mjs` (FEATURES.md references, PRD links and its generated parts; `--write` regenerates them) run in CI.
+- **Checks:** `bash scripts/check-placeholders.sh` and `node scripts/check-features.mjs` (FEATURES.md references, PRD links and its generated parts; `--write` regenerates them) run in CI once the `repo` job from `ci.yml.example` is added to `ci.yml` (it is left out while template placeholders remain).
 
 ## Reviewing documents
 Documents drafted or changed by an agent are reviewed by a human with `tools/doc-reviewer.html`:
