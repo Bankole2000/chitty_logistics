@@ -3,6 +3,7 @@
 pub mod config;
 pub mod error;
 pub mod health;
+pub mod openapi;
 pub mod request_id;
 pub mod state;
 

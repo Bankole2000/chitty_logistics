@@ -18,6 +18,7 @@ use axum::{
 };
 use serde::Serialize;
 use serde_json::Value;
+use utoipa::ToSchema;
 
 use crate::request_id::REQUEST_ID_HEADER;
 
@@ -77,16 +78,30 @@ impl IntoResponse for ApiError {
     }
 }
 
-#[derive(Serialize)]
+/// The body of every error response (docs/TECHNICAL.md, Error responses).
+#[derive(Serialize, ToSchema)]
+#[schema(example = json!({"error": {"code": "not_found", "message": "The requested resource was not found.", "request_id": "6f1c2b9e-1d2a-4c3b-9e8f-0a1b2c3d4e5f", "details": null}}))]
 pub struct ErrorBody {
     pub error: ErrorDetail,
 }
 
-#[derive(Serialize)]
+/// What went wrong, in a form clients can branch on and show.
+#[derive(Serialize, ToSchema)]
 pub struct ErrorDetail {
+    /// Stable snake_case identifier clients branch on, e.g. `not_found`, `forbidden`,
+    /// `unauthenticated`, `invalid_request`, `rate_limited`, `internal`. New codes may be
+    /// added; existing ones never change meaning.
+    #[schema(example = "not_found")]
     pub code: String,
+    /// Human-readable and safe to show; never contains internal details.
+    #[schema(example = "The requested resource was not found.")]
     pub message: String,
+    /// The request's `x-request-id` (sent by the client or generated), also returned as a
+    /// response header.
+    #[schema(required = true)]
     pub request_id: Option<String>,
+    /// Code-specific data (e.g. which fields are invalid), or null.
+    #[schema(value_type = Option<Object>, required = true)]
     pub details: Option<Value>,
 }
 

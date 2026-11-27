@@ -5,6 +5,7 @@ All notable changes to this app are recorded here. Format based on [Keep a Chang
 ## [Unreleased]
 ### Added
 - Server skeleton: health check at `GET /health` including the database, request IDs (`x-request-id`), the standard error body, CORS from `API_CORS_ORIGINS`, migrations with PostGIS enabled.
+- OpenAPI 3.1 contract generated from the code with utoipa, committed as `packages/api-contract/openapi.json`, documenting `GET /health` and the standard error body (`ErrorBody`). New subcommand `api openapi --out <file>` writes it and `api openapi --check [<file>]` fails when it is out of date; neither needs a database. A Bruno collection in `packages/api-contract/bruno/` has a request per endpoint.
 ### Changed
 ### Fixed
 ### Removed
