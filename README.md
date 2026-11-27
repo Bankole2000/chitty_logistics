@@ -125,7 +125,7 @@ Only the Rust apps exist so far; client commands are added with the first client
 
 ### api
 - Run locally: `docker compose up -d --wait` then `cargo run -p api` (listens on http://127.0.0.1:18081; configuration in apps/api/.env.example)
-- Test: `cargo test -p api` (needs the docker-compose database)
+- Test: `cargo test -p api` (needs the docker-compose database: `docker compose up -d --wait`. `DATABASE_URL` defaults to it through `.cargo/config.toml`; database tests use `#[sqlx::test]`, which creates a throwaway database per test, so they never migrate the shared `chitty` database)
 - Lint: `cargo fmt -p api --check` and `cargo clippy -p api --all-targets -- -D warnings`
 - Typecheck: `cargo check -p api --all-targets`
 - Build: `cargo build -p api --release`

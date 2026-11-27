@@ -1,0 +1,5 @@
+# Defaults for cargo commands run in this repository.
+[env]
+# #[sqlx::test] creates a throwaway database per test on this server (docker-compose.yml).
+# A DATABASE_URL already set in the environment wins.
+DATABASE_URL = { value = "postgres://postgres@127.0.0.1:15481/chitty", force = false }
