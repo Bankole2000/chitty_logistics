@@ -53,6 +53,24 @@ impl ApiError {
         )
     }
 
+    /// No signed-in user where one is required.
+    pub fn unauthenticated() -> Self {
+        Self::new(
+            StatusCode::UNAUTHORIZED,
+            "unauthenticated",
+            "Please sign in to continue.",
+        )
+    }
+
+    /// Signed in, but without the permission the action needs.
+    pub fn forbidden() -> Self {
+        Self::new(
+            StatusCode::FORBIDDEN,
+            "forbidden",
+            "You don't have permission to do this.",
+        )
+    }
+
     /// An unexpected failure. The cause is logged; the client sees only a generic message.
     pub fn internal(cause: impl std::fmt::Display) -> Self {
         tracing::error!(error = %cause, "internal error");
