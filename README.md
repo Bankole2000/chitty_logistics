@@ -129,6 +129,7 @@ Only the Rust apps exist so far; client commands are added with the first client
 - Lint: `cargo fmt -p api --check` and `cargo clippy -p api --all-targets -- -D warnings`
 - Typecheck: `cargo check -p api --all-targets`
 - Build: `cargo build -p api --release`
+- First admin: `cargo run -p api -- create-admin --email <email> --name <name>` prints a one-time enrolment token (no default credentials exist); the admin sends it with a new password to `POST /staff/enrolment` and completes sign-in with a code from their authenticator app
 - Migrations: `cargo run -p api -- migrate` (also run on start unless `API_MIGRATE_ON_START=false`); add one as `apps/api/migrations/<YYYYMMDDHHMMSS>_<name>.sql`
 
 ### worker

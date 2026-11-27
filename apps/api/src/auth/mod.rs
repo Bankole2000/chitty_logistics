@@ -10,11 +10,18 @@
 //! }
 //! ```
 //!
-//! The identity is read from the request extensions. Only the sign-in layer (TASK-005) puts
-//! it there, after checking a session; until then nothing does, so every staff endpoint
-//! answers 401. Tests insert an identity loaded with [`StaffIdentity::load`].
+//! The identity is read from the request extensions. Only the sign-in layer,
+//! [`session::authenticate`], puts it there, after checking the request's
+//! `Authorization: Bearer` session token; without a valid session every staff endpoint
+//! answers 401 `unauthenticated`. Tests of permission checks alone may insert an identity
+//! loaded with [`StaffIdentity::load`] into a test router's requests.
 
+pub mod admin;
 pub mod permissions;
+pub mod rate_limit;
+pub mod secrets;
+pub mod session;
+pub mod sign_in;
 
 use std::collections::BTreeSet;
 
