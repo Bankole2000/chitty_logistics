@@ -1,11 +1,12 @@
 //! Staff sign-in (FT-044, FT-062; FR-019): email and password, then a TOTP code.
 //!
 //! - `POST /staff/enrolment` `{token, password}`: with the one-time token from
-//!   `api create-admin`, sets the password and returns a new TOTP secret and otpauth URI
-//!   (shown once) with a challenge of purpose `enrol`.
+//!   `api create-admin` or a staff invitation (`POST /staff`), sets the password and returns
+//!   a new TOTP secret and otpauth URI (shown once) with a challenge of purpose `enrol`.
 //! - `POST /staff/sign-in` `{email, password}`: returns a challenge of purpose `sign_in`.
 //! - `POST /staff/sign-in/verify` `{challenge, code}`: completes either challenge with a
-//!   TOTP code (confirming the authenticator for `enrol`) and returns a session token, once.
+//!   TOTP code (confirming the authenticator for `enrol`, which also makes an invited
+//!   account active) and returns a session token, once.
 //! - `POST /staff/sign-out`: revokes the current session.
 //! - `GET /staff/me`: the signed-in staff member, their roles and permissions.
 //!
@@ -56,7 +57,8 @@ pub fn routes() -> Router<AppState> {
 // No Debug: holds a secret.
 #[derive(Deserialize, ToSchema)]
 pub struct EnrolRequest {
-    /// The one-time enrolment token printed by `api create-admin`.
+    /// The one-time enrolment token printed by `api create-admin` or sent in a staff
+    /// invitation.
     pub token: String,
     /// The new password: at least `STAFF_PASSWORD_MIN_LENGTH` characters (default 12).
     #[schema(format = Password)]
@@ -216,7 +218,7 @@ impl FromRequestParts<AppState> for ClientIp {
     }
 }
 
-fn request_id(headers: &HeaderMap) -> Option<String> {
+pub(crate) fn request_id(headers: &HeaderMap) -> Option<String> {
     headers
         .get(REQUEST_ID_HEADER)
         .and_then(|v| v.to_str().ok())
@@ -318,7 +320,7 @@ async fn blocking<T: Send + 'static>(
     tag = "staff-auth",
     operation_id = "staff_enrolment",
     summary = "Set a password and get a new authenticator secret",
-    description = "With the one-time enrolment token from `api create-admin`, sets the staff member's password and returns a new TOTP secret and otpauth URI (shown once) with a challenge. Complete enrolment with `POST /staff/sign-in/verify` and the first code. The token stays usable until enrolment completes or it expires; using it again replaces the secret. Needs no authentication.",
+    description = "With the one-time enrolment token from `api create-admin` or a staff invitation (`POST /staff`), sets the staff member's password and returns a new TOTP secret and otpauth URI (shown once) with a challenge. Complete enrolment with `POST /staff/sign-in/verify` and the first code. The token stays usable until enrolment completes or it expires; using it again replaces the secret. Needs no authentication.",
     request_body = EnrolRequest,
     responses(
         (status = 200, description = "Password set; the authenticator secret, shown once.", body = EnrolResponse),
@@ -338,7 +340,7 @@ pub async fn enrol(
         "SELECT t.staff_id, s.email
          FROM staff_enrolment_tokens t JOIN staff s ON s.id = t.staff_id
          WHERE t.token_hash = $1 AND t.used_at IS NULL AND t.expires_at > now()
-           AND s.status = 'active'",
+           AND s.status IN ('active', 'invited')",
     )
     .bind(&token_hash[..])
     .fetch_optional(&state.db)
@@ -484,6 +486,11 @@ pub async fn sign_in(
         audit_failure(&state.db, staff_id, "wrong_password", &ip, request_id).await?;
         return Err(invalid_credentials());
     }
+    if status == "invited" {
+        // The password was set by a started but unfinished enrolment.
+        attempt.succeeded(&state.db).await?;
+        return Err(totp_enrolment_required());
+    }
     if status != "active" {
         attempt.failed();
         audit_failure(&state.db, staff_id, "account_not_active", &ip, request_id).await?;
@@ -561,7 +568,9 @@ pub async fn verify(
     };
     let request_id = request_id(&headers);
     let enrolling = purpose == "enrol";
-    if status != "active" || (!enrolling && !totp_confirmed) {
+    // Invited staff may only complete enrolment; archived staff may do nothing.
+    let may_continue = status == "active" || (enrolling && status == "invited");
+    if !may_continue || (!enrolling && !totp_confirmed) {
         return Err(challenge_expired());
     }
     let (Some(nonce), Some(ciphertext)) = (nonce, ciphertext) else {
@@ -612,12 +621,14 @@ pub async fn verify(
     }
     let updated = sqlx::query(
         "UPDATE staff SET totp_last_used_step = $2,
-                          totp_confirmed_at = COALESCE(totp_confirmed_at, now())
-         WHERE id = $1 AND status = 'active'
+                          totp_confirmed_at = COALESCE(totp_confirmed_at, now()),
+                          status = 'active'
+         WHERE id = $1 AND (status = 'active' OR ($3 AND status = 'invited'))
            AND (totp_last_used_step IS NULL OR totp_last_used_step < $2)",
     )
     .bind(staff_id)
     .bind(step)
+    .bind(enrolling)
     .execute(&mut *tx)
     .await?;
     if updated.rows_affected() != 1 {
@@ -644,8 +655,8 @@ pub async fn verify(
                 action: "staff.enrolment_complete",
                 record_type: "staff",
                 record_id: staff_id.to_string(),
-                before: Some(json!({"totp_confirmed": false})),
-                after: Some(json!({"totp_confirmed": true})),
+                before: Some(json!({"totp_confirmed": false, "status": status})),
+                after: Some(json!({"totp_confirmed": true, "status": "active"})),
                 reason: None,
                 request_id: request_id.clone(),
             },

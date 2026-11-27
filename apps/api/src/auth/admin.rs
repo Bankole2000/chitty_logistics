@@ -2,9 +2,11 @@
 //! token. The admin uses the token with `POST /staff/enrolment` to choose a password and
 //! enrol an authenticator app. No default credentials exist anywhere.
 
+use std::time::Duration;
+
 use chrono::{DateTime, Utc};
 use serde_json::json;
-use sqlx::PgPool;
+use sqlx::{PgPool, Postgres, Transaction};
 use uuid::Uuid;
 
 use super::secrets;
@@ -38,11 +40,7 @@ pub async fn create_admin(
 ) -> Result<CreatedAdmin, CreateAdminError> {
     let email = email.trim();
     let name = name.trim();
-    let valid_email = email
-        .split_once('@')
-        .is_some_and(|(local, domain)| !local.is_empty() && domain.contains('.'))
-        && !email.contains(char::is_whitespace);
-    if !valid_email {
+    if !is_email(email) {
         return Err(CreateAdminError::Invalid(
             "--email must be an email address",
         ));
@@ -70,17 +68,8 @@ pub async fn create_admin(
         .bind(staff_id)
         .execute(&mut *tx)
         .await?;
-    let (enrolment_token, hash) = secrets::new_token();
-    let expires_at: DateTime<Utc> = sqlx::query_scalar(
-        "INSERT INTO staff_enrolment_tokens (token_hash, staff_id, expires_at)
-         VALUES ($1, $2, now() + make_interval(secs => $3))
-         RETURNING expires_at",
-    )
-    .bind(&hash[..])
-    .bind(staff_id)
-    .bind(config.enrolment_token_ttl.as_secs_f64())
-    .fetch_one(&mut *tx)
-    .await?;
+    let (enrolment_token, expires_at) =
+        issue_enrolment_token(&mut tx, staff_id, config.enrolment_token_ttl).await?;
     audit::record(
         &mut tx,
         &AuditEntry {
@@ -103,4 +92,35 @@ pub async fn create_admin(
         enrolment_token,
         expires_at,
     })
+}
+
+/// True for something shaped like an email address: `local@domain.tld`, no whitespace.
+pub fn is_email(email: &str) -> bool {
+    email
+        .split_once('@')
+        .is_some_and(|(local, domain)| !local.is_empty() && domain.contains('.'))
+        && !email.contains(char::is_whitespace)
+}
+
+/// Creates a one-time enrolment token for `staff_id` inside `tx`, valid for `ttl`. The token
+/// printed by `api create-admin` and the token of a staff invitation are the same kind, both
+/// accepted by `POST /staff/enrolment`. Returns the token (shown once; only its SHA-256 hash
+/// is stored) and when it expires.
+pub async fn issue_enrolment_token(
+    tx: &mut Transaction<'_, Postgres>,
+    staff_id: Uuid,
+    ttl: Duration,
+) -> Result<(String, DateTime<Utc>), sqlx::Error> {
+    let (token, hash) = secrets::new_token();
+    let expires_at: DateTime<Utc> = sqlx::query_scalar(
+        "INSERT INTO staff_enrolment_tokens (token_hash, staff_id, expires_at)
+         VALUES ($1, $2, now() + make_interval(secs => $3))
+         RETURNING expires_at",
+    )
+    .bind(&hash[..])
+    .bind(staff_id)
+    .bind(ttl.as_secs_f64())
+    .fetch_one(&mut **tx)
+    .await?;
+    Ok((token, expires_at))
 }

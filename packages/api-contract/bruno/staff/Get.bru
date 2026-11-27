@@ -1,0 +1,27 @@
+meta {
+  name: Get
+  type: http
+  seq: 3
+}
+
+docs {
+  One staff account (needs staff.view); staffId comes from "Invite".
+}
+
+get {
+  url: {{baseUrl}}/staff/:id
+  body: none
+  auth: bearer
+}
+
+params:path {
+  id: {{staffId}}
+}
+
+auth:bearer {
+  token: {{staffSessionToken}}
+}
+
+assert {
+  res.status: eq 200
+}

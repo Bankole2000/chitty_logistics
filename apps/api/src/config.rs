@@ -47,6 +47,10 @@ pub struct StaffAuthConfig {
     /// `STAFF_ENROLMENT_TOKEN_TTL_HOURS`: how long an enrolment token (from `api create-admin`)
     /// stays valid.
     pub enrolment_token_ttl: Duration,
+    /// `STAFF_INVITE_TTL_HOURS`: how long a staff invitation (from `POST /staff`) stays valid.
+    /// Separate from the create-admin token: an invitation travels by message and may wait
+    /// days to be opened, the create-admin token is handed over at once.
+    pub invite_ttl: Duration,
     /// `TOTP_ENCRYPTION_KEY`: encrypts TOTP secrets at rest.
     pub totp_encryption_key: SecretKey,
 }
@@ -196,6 +200,7 @@ impl Config {
             enrolment_token_ttl: Duration::from_secs(
                 positive("STAFF_ENROLMENT_TOKEN_TTL_HOURS", "24")? * 3600,
             ),
+            invite_ttl: Duration::from_secs(positive("STAFF_INVITE_TTL_HOURS", "168")? * 3600),
             totp_encryption_key,
         };
 
@@ -268,6 +273,7 @@ mod tests {
         assert_eq!(a.sign_in_window, Duration::from_secs(15 * 60));
         assert_eq!(a.challenge_ttl, Duration::from_secs(300));
         assert_eq!(a.enrolment_token_ttl, Duration::from_secs(24 * 3600));
+        assert_eq!(a.invite_ttl, Duration::from_secs(7 * 24 * 3600));
         assert!(c.uses_development_totp_key());
     }
 

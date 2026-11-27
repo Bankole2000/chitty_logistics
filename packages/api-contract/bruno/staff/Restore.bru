@@ -1,0 +1,34 @@
+meta {
+  name: Restore
+  type: http
+  seq: 7
+}
+
+docs {
+  Restores an archived staff member (needs staff.restore): active again if they had
+  finished enrolment, otherwise invited (send a new invitation). 409 not_archived.
+}
+
+post {
+  url: {{baseUrl}}/staff/:id/restore
+  body: json
+  auth: bearer
+}
+
+params:path {
+  id: {{staffId}}
+}
+
+auth:bearer {
+  token: {{staffSessionToken}}
+}
+
+body:json {
+  {
+    "reason": "Rehired"
+  }
+}
+
+assert {
+  res.status: eq 200
+}

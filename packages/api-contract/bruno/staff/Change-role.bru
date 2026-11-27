@@ -1,0 +1,35 @@
+meta {
+  name: Change role
+  type: http
+  seq: 5
+}
+
+docs {
+  Replaces the staff member's role (needs staff.edit_role). 409 last_admin when it would
+  leave nobody active who can manage roles.
+}
+
+patch {
+  url: {{baseUrl}}/staff/:id
+  body: json
+  auth: bearer
+}
+
+params:path {
+  id: {{staffId}}
+}
+
+auth:bearer {
+  token: {{staffSessionToken}}
+}
+
+body:json {
+  {
+    "role": "finance",
+    "reason": "Moved to finance"
+  }
+}
+
+assert {
+  res.status: eq 200
+}
