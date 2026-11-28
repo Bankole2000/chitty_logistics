@@ -1,7 +1,8 @@
 # Technical Specification
 
-Status: Draft | Owner: @bankole2000 | Version: 0.5 | Last updated: 2026-11-27
+Status: Draft | Owner: @bankole2000 | Version: 0.6 | Last updated: 2026-11-28
 References: FEATURES.md, PRD.md, DESIGN.md
+<!-- review:focus ADR-001, "admin-app", "customer-mobile-app" -->
 
 ## Architecture overview
 {{How the apps fit together: which clients call which services, data stores, external services. A component diagram helps.}}
@@ -11,25 +12,27 @@ One row per deployable app in `apps/`, per shared package in `packages/`, and fo
 
 | Component | Path | Kind | Stack and version | Deploys to | Owner | Requirements |
 |---|---|---|---|---|---|---|
-| customer-web | apps/customer-web | Web client | {{framework, language and version}} | {{hosting}} | @bankole2000 | FR-001–FR-009, FR-011–FR-014, FR-025, FR-030, FR-031, FR-035 |
-| customer-mobile-app | apps/customer-mobile-app | Mobile client | {{stack; minimum OS versions}} | App Store / Google Play | @bankole2000 | FR-001–FR-009, FR-011–FR-014, FR-025, FR-030, FR-031, FR-035 |
-| driver-web | apps/driver-web | Web client | {{framework, language and version}} | {{hosting}} | @bankole2000 | FR-011, FR-012, FR-015, FR-018, FR-025 |
-| driver-mobile-app | apps/driver-mobile-app | Mobile client | {{stack; minimum OS versions}} | App Store / Google Play | @bankole2000 | FR-004, FR-007, FR-010, FR-011, FR-012, FR-015–FR-018, FR-025, FR-031–FR-033, FR-035 |
-| admin-web | apps/admin-web | Web client | {{framework, language and version}} | {{hosting}} | @bankole2000 | FR-018–FR-029, FR-031 |
-| admin-app | apps/admin-app | Mobile client, desktop client | {{stack; minimum OS versions}} | App Store / Google Play; {{desktop distribution}} | @bankole2000 | FR-018–FR-029, FR-031 |
+| customer-web | apps/customer-web | Web client | Vue 3, Vite and TypeScript; client from packages/api-client-ts (ADR-001) | {{hosting}} | @bankole2000 | FR-001–FR-009, FR-011–FR-014, FR-025, FR-030, FR-031, FR-035 |
+| customer-mobile-app | apps/customer-mobile-app | Mobile client | Flutter (stable, pinned) for Android and iOS; client from packages/api-client-dart (ADR-001); minimum Android API 24, iOS 15 (defaults) | App Store / Google Play | @bankole2000 | FR-001–FR-009, FR-011–FR-014, FR-025, FR-030, FR-031, FR-035 |
+| driver-web | apps/driver-web | Web client | Vue 3, Vite and TypeScript; client from packages/api-client-ts (ADR-001) | {{hosting}} | @bankole2000 | FR-011, FR-012, FR-015, FR-018, FR-025 |
+| driver-mobile-app | apps/driver-mobile-app | Mobile client | Flutter (stable, pinned) for Android and iOS; client from packages/api-client-dart (ADR-001); minimum Android API 24, iOS 15 (defaults) | App Store / Google Play | @bankole2000 | FR-004, FR-007, FR-010, FR-011, FR-012, FR-015–FR-018, FR-025, FR-031–FR-033, FR-035 |
+| admin-web | apps/admin-web | Web client | Vue 3, Vite and TypeScript; client from packages/api-client-ts (ADR-001) | {{hosting}} | @bankole2000 | FR-018–FR-029, FR-031 |
+| admin-app | apps/admin-app | Mobile client, desktop client | Flutter (stable, pinned) for Windows, macOS, Android and iOS; client from packages/api-client-dart (ADR-001); minimum OS versions set when the app is created | App Store / Google Play; {{desktop distribution}} | @bankole2000 | FR-018–FR-029, FR-031 |
 | api | apps/api | Server/API | Rust (stable, pinned in rust-toolchain.toml), axum on tokio, sqlx with migrations, Postgres 17 with PostGIS 3 (ADR-001) | {{hosting}} | @bankole2000 | FR-001–FR-035 |
 | worker | apps/worker | Worker | Rust, same Cargo workspace and database layer as api (ADR-001) | {{hosting}} | @bankole2000 | FR-004, FR-006, FR-012, FR-014, FR-018, FR-034 |
-| api-contract | packages/api-contract | Shared package | OpenAPI 3.1 spec generated from the api with utoipa, committed as openapi.json; typed clients generated from it when the first client is built | Not deployed | @bankole2000 | — |
+| api-contract | packages/api-contract | Shared package | OpenAPI 3.1 spec generated from the api with utoipa, committed as openapi.json; typed clients are generated from it into packages/api-client-ts and packages/api-client-dart | Not deployed | @bankole2000 | — |
+| api-client-ts | packages/api-client-ts | Shared package | TypeScript types generated with openapi-typescript and an openapi-fetch wrapper, in a pnpm workspace; used by the Vue apps | Not deployed | @bankole2000 | — |
+| api-client-dart | packages/api-client-dart | Shared package | Dart client generated from openapi.json without a JVM, in a pub workspace; used by the Flutter apps | Not deployed | @bankole2000 | — |
 
 ## Local development
 Defaults that avoid the usual clashes on a developer machine; change them only with a reason.
-- **Ports:** uncommon ones, so the apps don't collide with other local tools (3000, 5173, 8000 and 8080 are often taken): api 18081, Postgres 15481 (chosen to stay clear of other projects and their Postgres containers); client ports are chosen when each client is created. Record each app's port in its `.env.example`.
+- **Ports:** uncommon ones, so the apps don't collide with other local tools (3000, 5173, 8000 and 8080 are often taken): api 18081, Postgres 15481 (chosen to stay clear of other projects and their Postgres containers); admin-web 13000, driver-web 13001, customer-web 13002 (Vite dev servers on `127.0.0.1`). Record each app's port in its `.env.example`.
 - **Host:** use `127.0.0.1`, not `localhost`, in URLs and bind addresses. `localhost` can resolve to IPv6 first, which adds a delay to every database connection on some systems and makes some dev servers listen on IPv6 only.
 - **Databases and other services** run in `docker-compose.yml` (committed) with trust authentication on `127.0.0.1` for local use and CI only, so no password sits in the repository. Each developer's extra services (caches, queues, other databases) go in a gitignored `docker-compose.override.yml`, which Compose loads automatically; commented-out services there cost nothing until needed. Turn off automatic restarts for local containers.
 - **CORS:** each server reads the allowed client origins from configuration (e.g. `API_CORS_ORIGINS`), with defaults for every local client: the web dev server and the desktop and mobile shells.
 
 ## Repository and workspace
-- Monorepo tooling: see ADR-001. A Cargo workspace at the repository root holds the Rust apps (api, later worker); the JavaScript and mobile workspace tooling is decided when the first client is created.
+- Monorepo tooling: see ADR-001. A Cargo workspace at the repository root holds the Rust apps (api, later worker); a pnpm workspace holds the Vue apps and TypeScript packages, and a Dart pub workspace holds the Flutter apps and Dart packages (ADR-001).
 - Dependency rules: apps may depend on packages; packages never depend on apps; apps never import from another app's folder.
 - {{Naming, code style, generated-code locations}}
 
@@ -128,7 +131,7 @@ The worker has no api of its own: it reads and writes the same data store as the
 ## Technical decisions
 | ID | Decision | Rationale | Status |
 |---|---|---|---|
-| ADR-001 | Server stack and workspace: Rust in a Cargo workspace (apps/api, apps/worker); axum on tokio; sqlx (compile-checked SQL, migrations) on Postgres 17 with PostGIS; OpenAPI generated with utoipa into packages/api-contract | SeaORM: less SQL but weaker PostGIS support. Separate services per client: rejected, one api serves every client by role. Client workspace tooling decided with the first client | Accepted (@bankole2000, 2026-11-26) |
+| ADR-001 | Stack and workspace: Rust in a Cargo workspace (apps/api, apps/worker); axum on tokio; sqlx (compile-checked SQL, migrations) on Postgres 17 with PostGIS; OpenAPI generated with utoipa into packages/api-contract | SeaORM: less SQL but weaker PostGIS support. Separate services per client: rejected, one api serves every client by role. Clients (@bankole2000, 2026-11-28): Vue 3 with Vite and TypeScript for the web apps; Flutter for the mobile apps and the admin app (mobile and desktop); typed clients generated from openapi.json (packages/api-client-ts, packages/api-client-dart). Alternatives considered: TypeScript everywhere (React, Expo, Tauri), which shares more code across clients; Rust clients (Leptos, Dioxus), whose mobile support is immature. Flutter was chosen for performance on low-end Android phones and one codebase for the admin app's mobile and desktop builds | Accepted (@bankole2000, 2026-11-26; clients 2026-11-28) |
 | ADR-002 | Infrastructure-as-code tool: {{tool, or "none: managed hosting configured by hand"}} | {{Alternatives and tradeoffs; state storage}} | Proposed |
 | ADR-003 | Sessions: opaque random tokens; only their hash is stored in Postgres, with expiry and last use. Authorization checks permissions; roles are data that map to permissions, so changing what a role may do needs no code change | JWT access and refresh tokens: no lookup per request, but sign-out, archiving staff (FT-064) and revoking assistants only take effect when the token expires | Accepted (@bankole2000, 2026-11-26) |
 
